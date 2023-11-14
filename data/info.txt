@@ -1,0 +1,5 @@
+some different datasets that could be useful
+
+https://www.kaggle.com/datasets/junhachoi/all-ranked-solo-games-on-kr-server-24-hours
+All games on one specific day on kr server (~1GB, relatively recent and could be useful since all matches are from the same patch)
+
