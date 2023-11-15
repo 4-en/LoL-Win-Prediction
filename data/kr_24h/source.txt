@@ -1,0 +1,4 @@
+https://www.kaggle.com/datasets/junhachoi/all-ranked-solo-games-on-kr-server-24-hours/
+
+# 258k games from one day of kr soloq
+#  (GMT 2022/07/02 00:00:00 to 2022/07/03 00:00:00)
