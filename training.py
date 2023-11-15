@@ -96,7 +96,9 @@ baseline_model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.005),
 #baseline_model.fit(train_x_1h, train_y, epochs=10, validation_data=(val_x_1h, val_y))
 
 # evaluate baseline model
-#baseline_model.evaluate(test_x_1h, test_y)
+#res = baseline_model.evaluate(test_x_1h, test_y)
+#print("Baseline model test loss: ", res[0])
+#print("Baseline model test accuracy: ", res[1])
 
 
 class WinChanceV2(tf.keras.Model):
@@ -104,10 +106,10 @@ class WinChanceV2(tf.keras.Model):
         super(WinChanceV2, self).__init__()
         self.embedding = tf.keras.layers.Embedding(CHAMP_NUM, 32, input_length=PLAYER_NUM)
         self.flatten = tf.keras.layers.Flatten()
-        self.dense1 = tf.keras.layers.Dense(256, activation='relu')
-        self.dense2 = tf.keras.layers.Dense(256, activation='relu')
-        self.dense3 = tf.keras.layers.Dense(128, activation='relu')
-        self.dense4 = tf.keras.layers.Dense(64, activation='relu')
+        self.dense1 = tf.keras.layers.Dense(128, activation='relu')
+        self.dense2 = tf.keras.layers.Dense(69, activation='relu')
+        self.dense3 = tf.keras.layers.Dense(69, activation='relu')
+        self.dense4 = tf.keras.layers.Dense(69, activation='relu')
         self.dense5 = tf.keras.layers.Dense(1, activation='sigmoid')
 
 
@@ -115,7 +117,7 @@ class WinChanceV2(tf.keras.Model):
         x = self.embedding(inputs)
         x = self.flatten(x)
         x = self.dense1(x)
-        x = self.dense2(x)
+        #x = self.dense2(x)
         x = self.dense3(x)
         x = self.dense4(x)
         return self.dense5(x)
@@ -133,13 +135,34 @@ def focal_loss(gamma=2.0, alpha=0.25):
 
     return focal_loss_fixed
 
+def no_avg_loss(scale=1):
+    mse = tf.keras.losses.MeanSquaredError()
+    def loss(y_true, y_pred):
+        # calculate max difference between all y_trues
+        max_diff_true = tf.reduce_max(y_true) - tf.reduce_min(y_true)
+        # calculate max difference between all y_preds
+        max_diff_pred = tf.reduce_max(y_pred) - tf.reduce_min(y_pred)
+        return mse(y_true, y_pred) + scale * (max_diff_true / (max_diff_pred+1e-8))
+    return loss
+
 # train win chance model
 win_chance_model = WinChanceV2()
-win_chance_model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.003),
+win_chance_model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.005),
               loss=tf.keras.losses.MeanSquaredError(),
               metrics=['accuracy'])
 
-win_chance_model.fit(train_x, train_y, epochs=5, validation_data=(val_x, val_y), batch_size=32)
+from augmentation import MatchAugmentation
+
+aug = MatchAugmentation(train_x, train_y, aug_chance=0.3, batch_size=32)
+val_aug = MatchAugmentation(val_x, val_y, aug_chance=0.5, batch_size=1)
+val_aug_x, val_aug_y = [], []
+for i in range(len(val_aug)):
+    x, y = val_aug[i]
+    val_aug_x.append(x)
+    val_aug_y.append(y)
+
+#win_chance_model.fit(aug, epochs=5, validation_data=(val_x, val_y), batch_size=32)
+win_chance_model.fit(aug, epochs=4, validation_data=(val_x, val_y), batch_size=32)
 
 # evaluate win chance model with specific test data
 # 5x champ 1 vs 5x champ 2

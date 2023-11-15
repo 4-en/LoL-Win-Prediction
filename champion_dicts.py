@@ -18,9 +18,15 @@ class ChampionConverter:
         self.champion_indices_to_ids = {}
         self.load_champion_data()
 
+
     def load_champion_data(self):
         with open("champion.json", "r", encoding="utf-8") as f:
             champion_data = json.load(f)
+
+        # insert null champion
+        self.champion_names.append("null")
+        self.champion_ids.append(0)
+
         for champion in champion_data["data"].values():
             self.champion_names.append(champion["id"])
             self.champion_ids.append(int(champion["key"]))
@@ -36,6 +42,8 @@ class ChampionConverter:
             self.champion_ids_to_names[champion_id] = self.champion_names[i]
             self.champion_ids_to_indices[champion_id] = i
             self.champion_indices_to_ids[i] = champion_id
+
+        self.champion_count = len(self.champion_names)
 
 
     def get_champion_name_from_index(self, champion_index):
