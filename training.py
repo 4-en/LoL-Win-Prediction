@@ -73,25 +73,28 @@ print("Average win chance: ", avg_win_chance)
 class BaselineModel(tf.keras.Model):
     def __init__(self):
         super(BaselineModel, self).__init__()
-        self.dense1 = tf.keras.layers.Dense(256, activation='relu', input_shape=(CHAMP_NUM*PLAYER_NUM,))
+        self.dense1 = tf.keras.layers.Dense(256, activation='relu', input_shape=(None,CHAMP_NUM,PLAYER_NUM))
         self.dense2 = tf.keras.layers.Dense(128, activation='relu')
-        self.dense3 = tf.keras.layers.Dense(128, activation='relu')
         self.dense4 = tf.keras.layers.Dense(64, activation='relu')
         self.dense5 = tf.keras.layers.Dense(1, activation='sigmoid')
 
     def call(self, inputs):
-        x = self.dense1(inputs)
+        x = tf.reshape(inputs, (-1, CHAMP_NUM*PLAYER_NUM))
+        x = self.dense1(x)
         x = self.dense2(x)
-        x = self.dense3(x)
         x = self.dense4(x)
         return self.dense5(x)
     
 
 # train baseline model
-baseline_model = BaselineModel()
-baseline_model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.005),
-              loss=tf.keras.losses.MeanSquaredError(),
-              metrics=['accuracy'])
+#baseline_model = BaselineModel()
+#baseline_model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
+#              loss=tf.keras.losses.MeanSquaredError(),
+#              metrics=['accuracy'])
+
+# summarize baseline model
+#baseline_model.build(input_shape=(None, CHAMP_NUM, PLAYER_NUM))
+#baseline_model.summary()
 
 #baseline_model.fit(train_x_1h, train_y, epochs=10, validation_data=(val_x_1h, val_y))
 
@@ -99,6 +102,66 @@ baseline_model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.005),
 #res = baseline_model.evaluate(test_x_1h, test_y)
 #print("Baseline model test loss: ", res[0])
 #print("Baseline model test accuracy: ", res[1])
+
+
+class WinChance(tf.keras.Model):
+    def __init__(self):
+        super(WinChance, self).__init__()
+        self.conv0 = tf.keras.layers.Conv1D(32, 1, activation='relu', input_shape=(PLAYER_NUM, CHAMP_NUM))
+        self.conv1 = tf.keras.layers.Conv1D(32, 2, activation='relu', input_shape=(PLAYER_NUM, 32))
+        self.maxpool = tf.keras.layers.MaxPool1D(2)
+        self.flatten = tf.keras.layers.Flatten()
+        # 160
+        self.dense1 = tf.keras.layers.Dense(220, activation='relu')
+        self.dense2 = tf.keras.layers.Dense(220, activation='relu')
+
+        self.conv2 = tf.keras.layers.Conv1D(64, 2, activation='relu', input_shape=(10,22))
+        self.maxpool2 = tf.keras.layers.MaxPool1D(2)
+        self.flatten2 = tf.keras.layers.Flatten()
+        # 60
+        self.dense3 = tf.keras.layers.Dense(300, activation='relu')
+        self.dense4 = tf.keras.layers.Dense(300, activation='relu')
+
+        self.conv3 = tf.keras.layers.Conv1D(128, 3, activation='relu', input_shape=(10,30))
+        self.maxpool3 = tf.keras.layers.MaxPool1D(2)
+        self.flatten3 = tf.keras.layers.Flatten()
+        # 28
+        self.dense5 = tf.keras.layers.Dense(420, activation='relu')
+        self.dense6 = tf.keras.layers.Dense(128, activation='relu')
+        self.denseOut = tf.keras.layers.Dense(1, activation='sigmoid')
+
+    def call(self, inputs):
+        inputs = tf.reshape(inputs, (-1, PLAYER_NUM, CHAMP_NUM))
+
+        x = self.conv0(inputs)
+        #x = self.maxpool(x)
+        x = self.flatten(x)
+        x = self.dense1(x)
+        x = self.dense2(x)
+        x = tf.reshape(x, (-1, 10, 22))
+
+        x = self.conv2(x)
+        x = self.maxpool2(x)
+        x = self.flatten2(x)
+        x = self.dense3(x)
+        x = self.dense4(x)
+        x = tf.reshape(x, (-1, 10, 30))
+
+        x = self.conv3(x)
+        x = self.maxpool3(x)
+        x = self.flatten3(x)
+        x = self.dense5(x)
+        x = self.dense6(x)
+        return self.denseOut(x)
+    
+#win_chance_model_1 = WinChance()
+#win_chance_model_1.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
+#              loss=tf.keras.losses.MeanSquaredError(),
+#              metrics=['accuracy'])
+
+#win_chance_model_1.fit(train_x_1h, train_y, epochs=10, validation_data=(val_x_1h, val_y))
+
+
 
 
 class WinChanceV2(tf.keras.Model):
@@ -117,7 +180,7 @@ class WinChanceV2(tf.keras.Model):
         x = self.embedding(inputs)
         x = self.flatten(x)
         x = self.dense1(x)
-        #x = self.dense2(x)
+        x = self.dense2(x)
         x = self.dense3(x)
         x = self.dense4(x)
         return self.dense5(x)
@@ -147,22 +210,32 @@ def no_avg_loss(scale=1):
 
 # train win chance model
 win_chance_model = WinChanceV2()
-win_chance_model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.005),
+win_chance_model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
               loss=tf.keras.losses.MeanSquaredError(),
               metrics=['accuracy'])
 
 from augmentation import MatchAugmentation
 
-aug = MatchAugmentation(train_x, train_y, aug_chance=0.3, batch_size=32)
-val_aug = MatchAugmentation(val_x, val_y, aug_chance=0.5, batch_size=1)
+aug = MatchAugmentation(train_x, train_y, aug_chance=0.5, batch_size=32)
+val_aug = MatchAugmentation(val_x, val_y, aug_chance=0.5, batch_size=32)
 val_aug_x, val_aug_y = [], []
 for i in range(len(val_aug)):
     x, y = val_aug[i]
+    x = x[0]
+    y = y[0]
+    assert x.shape == (10,) and y.shape == (1,)
     val_aug_x.append(x)
     val_aug_y.append(y)
 
+val_aug_x = np.array(val_aug_x)
+val_aug_y = np.array(val_aug_y)
+print(val_aug_x[-1].shape, val_aug_y[-1].shape)
+
 #win_chance_model.fit(aug, epochs=5, validation_data=(val_x, val_y), batch_size=32)
-win_chance_model.fit(aug, epochs=4, validation_data=(val_x, val_y), batch_size=32)
+#win_chance_model.fit(aug, epochs=10, validation_data=(val_aug_x, val_aug_y), batch_size=32)
+
+# save model
+#win_chance_model.save_weights("models/win_chance_model_v2.h5")
 
 # evaluate win chance model with specific test data
 # 5x champ 1 vs 5x champ 2
