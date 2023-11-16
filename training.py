@@ -67,6 +67,8 @@ train_x_1h, train_y, val_x_1h, val_y, test_x_1h, test_y = split_data(x_hot, y)
 train_x, _, val_x, _, test_x, _ = split_data(x, y)
 
 
+
+
 avg_win_chance = np.average(train_y)
 print("Average win chance: ", avg_win_chance)
 
@@ -211,13 +213,13 @@ def no_avg_loss(scale=1):
     return loss
 
 # train win chance model
-win_chance_model = WinChanceV2()
+#win_chance_model = WinChanceV2()
 
 # lr scheduler
 scheduler = tf.keras.callbacks.LearningRateScheduler(lambda epoch: 0.0001 * 0.90**epoch)
-win_chance_model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
-              loss=tf.keras.losses.MeanSquaredError(),
-              metrics=['accuracy'])
+#win_chance_model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
+#              loss=tf.keras.losses.MeanSquaredError(),
+#              metrics=['accuracy'])
 
 from augmentation import MatchAugmentation
 
@@ -237,10 +239,24 @@ val_aug_y = np.array(val_aug_y)
 #print(val_aug_x[-1].shape, val_aug_y[-1].shape)
 
 #win_chance_model.fit(aug, epochs=5, validation_data=(val_x, val_y), batch_size=32)
-win_chance_model.fit(aug, epochs=100, validation_data=(val_aug_x, val_aug_y), batch_size=32, callbacks=[scheduler])
+#win_chance_model.fit(aug, epochs=100, validation_data=(val_x, val_y), batch_size=32, callbacks=[scheduler])
 
 # save model
-win_chance_model.save_weights("models/win_chance_model_v2_s.h5")
+#win_chance_model.save_weights("models/win_chance_model_v2_s.h5")
+
+from models.SynergyModel import SynergyModel
+
+synergy_model = SynergyModel()
+synergy_model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
+              loss=tf.keras.losses.MeanSquaredError(),
+              metrics=['accuracy'])
+
+synergy_model.fit(aug, epochs=10, validation_data=(val_x, val_y), batch_size=32, callbacks=[scheduler])
+
+# save model
+synergy_model.save_weights("models/synergy_model_s.h5")
+
+win_chance_model = synergy_model
 
 # evaluate win chance model with specific test data
 # 5x champ 1 vs 5x champ 2
