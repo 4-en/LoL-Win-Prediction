@@ -1,5 +1,6 @@
 # basic training loop for different models
 
+from typing import Any
 import tensorflow as tf
 import numpy as np
 
@@ -71,6 +72,17 @@ train_x, _, val_x, _, test_x, _ = split_data(x, y)
 
 avg_win_chance = np.average(train_y)
 print("Average win chance: ", avg_win_chance)
+
+class TrivialModel(tf.keras.Model):
+    """A trivial model that always predicts the average win chance"""
+    def __init__(self):
+        super(TrivialModel, self).__init__()
+        self.prediction = avg_win_chance
+
+    def call(self, inputs):
+        if len(inputs.shape) > 1:
+            return np.array([self.prediction]*inputs.shape[0])
+        return np.array([self.prediction])
 
 
 # baseline model
