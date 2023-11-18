@@ -85,7 +85,7 @@ class TrivialModel(tf.keras.Model):
         return np.array([self.prediction])
 
 
-# baseline model
+# baseline model, just some dense layers
 class BaselineModel(tf.keras.Model):
     def __init__(self):
         super(BaselineModel, self).__init__()
@@ -101,131 +101,6 @@ class BaselineModel(tf.keras.Model):
         x = self.dense4(x)
         return self.dense5(x)
     
-
-# train baseline model
-#baseline_model = BaselineModel()
-#baseline_model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
-#              loss=tf.keras.losses.MeanSquaredError(),
-#              metrics=['accuracy'])
-
-# summarize baseline model
-#baseline_model.build(input_shape=(None, CHAMP_NUM, PLAYER_NUM))
-#baseline_model.summary()
-
-#baseline_model.fit(train_x_1h, train_y, epochs=10, validation_data=(val_x_1h, val_y))
-
-# evaluate baseline model
-#res = baseline_model.evaluate(test_x_1h, test_y)
-#print("Baseline model test loss: ", res[0])
-#print("Baseline model test accuracy: ", res[1])
-
-
-class WinChance(tf.keras.Model):
-    def __init__(self):
-        super(WinChance, self).__init__()
-        self.conv0 = tf.keras.layers.Conv1D(32, 1, activation='relu', input_shape=(PLAYER_NUM, CHAMP_NUM))
-        self.conv1 = tf.keras.layers.Conv1D(32, 2, activation='relu', input_shape=(PLAYER_NUM, 32))
-        self.maxpool = tf.keras.layers.MaxPool1D(2)
-        self.flatten = tf.keras.layers.Flatten()
-        # 160
-        self.dense1 = tf.keras.layers.Dense(220, activation='relu')
-        self.dense2 = tf.keras.layers.Dense(220, activation='relu')
-
-        self.conv2 = tf.keras.layers.Conv1D(64, 2, activation='relu', input_shape=(10,22))
-        self.maxpool2 = tf.keras.layers.MaxPool1D(2)
-        self.flatten2 = tf.keras.layers.Flatten()
-        # 60
-        self.dense3 = tf.keras.layers.Dense(300, activation='relu')
-        self.dense4 = tf.keras.layers.Dense(300, activation='relu')
-
-        self.conv3 = tf.keras.layers.Conv1D(128, 3, activation='relu', input_shape=(10,30))
-        self.maxpool3 = tf.keras.layers.MaxPool1D(2)
-        self.flatten3 = tf.keras.layers.Flatten()
-        # 28
-        self.dense5 = tf.keras.layers.Dense(420, activation='relu')
-        self.dense6 = tf.keras.layers.Dense(128, activation='relu')
-        self.denseOut = tf.keras.layers.Dense(1, activation='sigmoid')
-
-    def call(self, inputs):
-        inputs = tf.reshape(inputs, (-1, PLAYER_NUM, CHAMP_NUM))
-
-        x = self.conv0(inputs)
-        #x = self.maxpool(x)
-        x = self.flatten(x)
-        x = self.dense1(x)
-        x = self.dense2(x)
-        x = tf.reshape(x, (-1, 10, 22))
-
-        x = self.conv2(x)
-        x = self.maxpool2(x)
-        x = self.flatten2(x)
-        x = self.dense3(x)
-        x = self.dense4(x)
-        x = tf.reshape(x, (-1, 10, 30))
-
-        x = self.conv3(x)
-        x = self.maxpool3(x)
-        x = self.flatten3(x)
-        x = self.dense5(x)
-        x = self.dense6(x)
-        return self.denseOut(x)
-    
-#win_chance_model_1 = WinChance()
-#win_chance_model_1.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
-#              loss=tf.keras.losses.MeanSquaredError(),
-#              metrics=['accuracy'])
-
-#win_chance_model_1.fit(train_x_1h, train_y, epochs=10, validation_data=(val_x_1h, val_y))
-
-
-
-
-class WinChanceV2(tf.keras.Model):
-    def __init__(self):
-        super(WinChanceV2, self).__init__()
-        self.embedding = tf.keras.layers.Embedding(CHAMP_NUM, 24, input_length=PLAYER_NUM)
-        self.flatten = tf.keras.layers.Flatten()
-        self.dense1 = tf.keras.layers.Dense(256, activation='relu')
-        self.dense2 = tf.keras.layers.Dense(178, activation='relu')
-        self.dense3 = tf.keras.layers.Dense(104, activation='relu')
-        self.dense4 = tf.keras.layers.Dense(64, activation='relu')
-        self.dense5 = tf.keras.layers.Dense(1, activation='sigmoid')
-
-
-    def call(self, inputs):
-        x = self.embedding(inputs)
-        x = self.flatten(x)
-        x = self.dense1(x)
-        x = self.dense2(x)
-        x = self.dense3(x)
-        x = self.dense4(x)
-        return self.dense5(x)
-
-from keras import backend as K
-
-def focal_loss(gamma=2.0, alpha=0.25):
-    def focal_loss_fixed(y_true, y_pred):
-        epsilon = K.epsilon()
-        y_pred = K.clip(y_pred, epsilon, 1.0 - epsilon)
-        p_t = tf.where(K.equal(y_true, 1), y_pred, 1 - y_pred)
-        alpha_t = tf.where(K.equal(y_true, 1), K.ones_like(y_true) * alpha, K.ones_like(y_true) * (1 - alpha))
-        loss = -K.sum(alpha_t * K.pow(1 - p_t, gamma) * K.log(p_t))
-        return loss
-
-    return focal_loss_fixed
-
-def no_avg_loss(scale=1):
-    mse = tf.keras.losses.MeanSquaredError()
-    def loss(y_true, y_pred):
-        # calculate max difference between all y_trues
-        max_diff_true = tf.reduce_max(y_true) - tf.reduce_min(y_true)
-        # calculate max difference between all y_preds
-        max_diff_pred = tf.reduce_max(y_pred) - tf.reduce_min(y_pred)
-        return mse(y_true, y_pred) + scale * (max_diff_true / (max_diff_pred+1e-8))
-    return loss
-
-# train win chance model
-#win_chance_model = WinChanceV2()
 
 # lr scheduler
 scheduler = tf.keras.callbacks.LearningRateScheduler(lambda epoch: 0.0001 * 0.90**epoch)
@@ -248,27 +123,63 @@ for i in range(len(val_aug)):
 
 val_aug_x = np.array(val_aug_x)
 val_aug_y = np.array(val_aug_y)
-#print(val_aug_x[-1].shape, val_aug_y[-1].shape)
-
-#win_chance_model.fit(aug, epochs=5, validation_data=(val_x, val_y), batch_size=32)
-#win_chance_model.fit(aug, epochs=100, validation_data=(val_x, val_y), batch_size=32, callbacks=[scheduler])
-
-# save model
-#win_chance_model.save_weights("models/win_chance_model_v2_s.h5")
 
 from models.SynergyModel import SynergyModel
+from models.basic_embedding_model import BasicEmbedding
 
-synergy_model = SynergyModel()
-synergy_model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
+model = BasicEmbedding()
+model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
               loss=tf.keras.losses.MeanSquaredError(),
               metrics=['accuracy'])
 
-synergy_model.fit(aug, epochs=10, validation_data=(val_x, val_y), batch_size=32, callbacks=[scheduler])
+model.fit(aug, epochs=3, validation_data=(val_x, val_y), batch_size=32, callbacks=[scheduler])
 
-# save model
-synergy_model.save_weights("models/synergy_model_s.h5")
+def find_optimal_champion():
+    # get random sample from test data
+    l = test_x.shape[0]
+    idx = np.random.randint(0, l)
+    sample = test_x[idx]
+    pick_order = [0,3,4,7,8,1,2,5,6,9]
+    remove_num = np.random.randint(1, 10)
+    mask = np.where(np.array(pick_order) < remove_num, 1, 0)
+    match = sample * mask
 
-win_chance_model = synergy_model
+    all_champs = np.arange(conv.champion_count)
+
+    # duplicate matches
+    matches = np.tile(match, conv.champion_count)
+    matches = matches.reshape((-1, 10))
+    matches[:, remove_num] = all_champs[:]
+
+    results = model.predict(matches)
+
+    # sorts all_champs based on results
+    results = results.reshape((-1,))
+    indicies = np.argsort(results)
+    indicies = indicies[::-1]
+    all_champs = all_champs[indicies]
+    results = results[indicies]
+    blue = [ conv.get_champion_name_from_index(i) for i in match[:5]]
+    red = [ conv.get_champion_name_from_index(i) for i in match[5:]]
+
+    print("5 best picks for")
+    print(blue)
+    print("vs")
+    print(red)
+    for i in range(5):
+        wr = results[i]
+        wr_rounded = round(float(wr) * 100, 2)
+        champ = all_champs[i]
+        print(champ)
+        champ_name = conv.get_champion_name_from_index(int(champ))
+        print(f"{champ_name}: {wr_rounded}%")
+
+while True:
+    find_optimal_champion()
+    input()
+
+
+
 
 # evaluate win chance model with specific test data
 # 5x champ 1 vs 5x champ 2
@@ -282,7 +193,7 @@ while True:
     test_in = [idx1]*5 + [idx2]*5
     test_in = np.array(test_in)
 
-    y_pred = win_chance_model.predict(test_in.reshape(1,10))
+    y_pred = model.predict(test_in.reshape(1,10))
 
     print("Win chance of ", closest1, " vs ", closest2, ": ", y_pred[0][0])
 

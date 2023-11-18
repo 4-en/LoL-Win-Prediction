@@ -29,6 +29,7 @@ class SynergyHead(tf.keras.layers.Layer):
         x1 = inputs[:, 0, :]
         xRest = inputs[:, 1:, :]
 
+
         # multiply the first champion with the rest
         x1 = tf.expand_dims(x1, axis=1)
         xMult = tf.multiply(x1, xRest)
@@ -43,10 +44,17 @@ class SynergyHead(tf.keras.layers.Layer):
             x = layer(x)
 
         # add the result of the multiplication
-        #x = tf.add(x, xMult)
+        xMult = tf.reshape(xMult, (-1, (self.in_count-1)*self.in_dim))
+        x = tf.add(x, xMult)
+
+        # normalize the result
+        x = tf.math.l2_normalize(x, axis=1)
 
         # final dense layer
         x = self.final_dense(x)
+
+        # normalize the result
+        x = tf.math.l2_normalize(x, axis=1)
 
 
         return x
@@ -74,7 +82,7 @@ class SynergyModel(tf.keras.Model):
         # weights to expand the input to the amount of heads
         # state -> (batch_size, 10*4*2, 32)
         # 1 row, 4*2*10 columns
-        self.h_weights = tf.keras.layers.Dense(heads*2*10*embed_dim, activation=None, input_shape=(None, 10 * embed_dim))
+        self.h_weights = tf.keras.layers.Dense(heads*2*embed_dim, activation=None, input_shape=(None, None, embed_dim))
 
         # synergy heads
         self.synergy_heads = []
@@ -101,10 +109,7 @@ class SynergyModel(tf.keras.Model):
 
         # embed the inputs
         x = self.embedding(inputs)
-        #x = tf.reshape(x, (-1, 10, self.embed_dim))
-        
-        # expand the input to the amount of heads
-        x = tf.reshape(x, (-1, 10 * self.embed_dim))
+
         x = self.h_weights(x)
         
         x = tf.reshape(x, (-1, self.head_count*2, 10, self.embed_dim))

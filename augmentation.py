@@ -85,7 +85,7 @@ class MatchAugmentation(Sequence):
         Since multiple different matches can lead to the same partial select state, we can generate more samples this way."""
         # pick order in draft (b1, r1, r2, b2,...) -> pick index in match
         pick_order = [0,3,4,7,8,1,2,5,6,9]
-        remove_num = np.random.randint(0, len(match)-1)
+        remove_num = np.random.randint(0, len(match))
         mask = np.where(np.array(pick_order) < remove_num, 1, 0)
         match = match * mask
         return match, label
