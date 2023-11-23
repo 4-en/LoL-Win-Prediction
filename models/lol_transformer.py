@@ -16,6 +16,8 @@ class LoLTransformerBlock(tf.keras.layers.Layer):
         # multi-head attention
         self.lin_qkv = tf.keras.layers.Dense(3*self.embedding_dim*self.num_heads, input_shape=(self.embedding_dim,), activation=None)
 
+        self.layernorm1 = tf.keras.layers.LayerNormalization()
+
         #self.head_ffs = [tf.keras.layers.Dense()]
 
     def split_heads(self, x):
@@ -23,12 +25,28 @@ class LoLTransformerBlock(tf.keras.layers.Layer):
         # split into num_heads
         x = self.lin_qkv(x)
         # x.shape = (batch_size, 10, 3*embedding_dim*num_heads)
-        x.reshape(-1, 10, self.num_heads, self)
+        x.reshape(-1, 10, self.num_heads, 3, self.embedding_dim)
+
+        # split into q, k, v
+        q = x[:,:,:,0,:]
+        k = x[:,:,:,1,:]
+        v = x[:,:,:,2,:]
+
+        return q, k, v
+    
+    def scaled_dot_product_attention(self, q, k, v):
+        # perform self attention for each head
 
 
         
 
     def call(self, x):
+        x_original = x
+        # do something with x...
+
+        # combine with original input
+        x = x + x_original
+        x = self.layernorm1(x)
         pass
 
 
