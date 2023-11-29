@@ -36,6 +36,7 @@ class DeepConv(tf.keras.Model):
 
 
     def save_x(self, x):
+        # store for residual connection
         # maybe dont store as a class variable, rework loop later
         self.x = x
         return x
