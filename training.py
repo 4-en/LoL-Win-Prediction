@@ -89,28 +89,52 @@ class TrivialModel(tf.keras.Model):
 class BaselineModel(tf.keras.Model):
     def __init__(self):
         super(BaselineModel, self).__init__()
-        self.dense1 = tf.keras.layers.Dense(256, activation='relu', input_shape=(None,CHAMP_NUM,PLAYER_NUM))
-        self.dense2 = tf.keras.layers.Dense(128, activation='relu')
-        self.dense4 = tf.keras.layers.Dense(64, activation='relu')
+        self.dense1 = tf.keras.layers.Dense(32, activation='relu', input_shape=(None,CHAMP_NUM))
+        self.dense2 = tf.keras.layers.Dense(256, activation='relu')
+        self.dense4 = tf.keras.layers.Dense(128, activation='relu')
         self.dense5 = tf.keras.layers.Dense(1, activation='sigmoid')
 
     def call(self, inputs):
-        x = tf.reshape(inputs, (-1, CHAMP_NUM*PLAYER_NUM))
+        x = tf.reshape(inputs, (-1, PLAYER_NUM, CHAMP_NUM))
+        # same dense for every player
         x = self.dense1(x)
+        # shape = (-1, 10, 32  )
+        # flatten
+        x = tf.reshape(x, (-1, 32*10))
+        # 3 dense layers, last one is output of (-1, 1)
         x = self.dense2(x)
         x = self.dense4(x)
         return self.dense5(x)
+
+import matplotlib.pyplot as plt
+def plot_hist(hist) -> None:
     
+    plt.plot(hist.history['accuracy'])
+    plt.plot(hist.history['val_accuracy'])
+    plt.title('model accuracy')
+    plt.ylabel('accuracy')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'test'], loc='upper left')
+    plt.show()
+
+    # loss
+    plt.plot(hist.history['loss'])
+    plt.plot(hist.history['val_loss'])
+    plt.title('model loss')
+    plt.ylabel('loss')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'test'])
+    plt.show()
 
 # lr scheduler
-scheduler = tf.keras.callbacks.LearningRateScheduler(lambda epoch: 0.0001 * 0.90**epoch)
+scheduler = tf.keras.callbacks.LearningRateScheduler(lambda epoch: 0.0001 * 0.95**epoch)
 #win_chance_model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
 #              loss=tf.keras.losses.MeanSquaredError(),
 #              metrics=['accuracy'])
 
 from augmentation import MatchAugmentation
 
-aug = MatchAugmentation(train_x, train_y, aug_chance=0.2, batch_size=32)
+aug = MatchAugmentation(train_x, train_y, aug_chance=0.95, batch_size=32)
 val_aug = MatchAugmentation(val_x, val_y, aug_chance=0.0, batch_size=1)
 val_aug_x, val_aug_y = [], []
 for i in range(len(val_aug)):
@@ -127,20 +151,36 @@ val_aug_y = np.array(val_aug_y)
 from models.SynergyModel import SynergyModel
 from models.basic_embedding_model import BasicEmbedding
 
+from models.prob_sample_model import SamplingModel
+
 model = BasicEmbedding()
 model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
-              loss=tf.keras.losses.MeanSquaredError(),
+              loss=tf.keras.losses.BinaryCrossentropy(),
               metrics=['accuracy'])
 
-model.fit(aug, epochs=3, validation_data=(val_x, val_y), batch_size=32, callbacks=[scheduler])
+hist = model.fit(aug, epochs=10, validation_data=(val_x, val_y), batch_size=32, callbacks=[scheduler])
+#hist = model.fit(train_x_1h, train_y, epochs=5, validation_data=(val_x_1h, val_y), batch_size=32, callbacks=[scheduler])
+
+plot_hist(hist)
+# save model weights
+#model.save_weights("models/basic_embedding_model_weights.h5")
 
 def find_optimal_champion():
     # get random sample from test data
     l = test_x.shape[0]
     idx = np.random.randint(0, l)
     sample = test_x[idx]
+    # shuffle sample
+    blue = sample[:5]
+    red = sample[5:]
+    # shuffle blue
+    np.random.shuffle(blue)
+    # shuffle red
+    np.random.shuffle(red)
+    sample = np.concatenate((blue, red))
     pick_order = [0,3,4,7,8,1,2,5,6,9]
     remove_num = np.random.randint(1, 10)
+    remove_num = 9
     mask = np.where(np.array(pick_order) < remove_num, 1, 0)
     match = sample * mask
 
@@ -156,7 +196,7 @@ def find_optimal_champion():
     # sorts all_champs based on results
     results = results.reshape((-1,))
     indicies = np.argsort(results)
-    indicies = indicies[::-1]
+    #indicies = indicies[::-1]
     all_champs = all_champs[indicies]
     results = results[indicies]
     blue = [ conv.get_champion_name_from_index(i) for i in match[:5]]
