@@ -5,7 +5,7 @@ import tensorflow as tf
 class BasicEmbedding(tf.keras.Model):
     def __init__(self, champ_num=170, player_num=10):
         super(BasicEmbedding, self).__init__()
-        self.embedding = tf.keras.layers.Embedding(champ_num, 24, input_length=player_num)
+        self.embedding = tf.keras.layers.Embedding(champ_num, 32, input_length=player_num)
         self.flatten = tf.keras.layers.Flatten()
         self.dense1 = tf.keras.layers.Dense(256, activation='gelu')
         self.dense2 = tf.keras.layers.Dense(178, activation='gelu')

@@ -8,12 +8,14 @@ from keras.utils import Sequence
 
 class MatchAugmentation(Sequence):
 
-    def __init__(self, data, labels, batch_size=32, aug_chance=0.6, adjust_labels=False):
+    def __init__(self, data, labels, batch_size=32, aug_chance=0.6, adjust_labels=False, mask_champs=True, max_replace=1):
         self.champion_converter = ChampionConverter()
         self.data = data
         self.labels = labels
         self.batch_size = batch_size
         self.aug_chance = aug_chance
+        self.mask_champs = mask_champs
+        self.max_replace = max_replace
 
         # TODO: implement label adjustment
         self.adjust_labels = adjust_labels # if true, labels are moved towards 0.5 depending on amount of augmentations
@@ -41,10 +43,13 @@ class MatchAugmentation(Sequence):
         match = match.copy()
         match, res = self.shuffle_match(match, res)
         if np.random.rand() < self.aug_chance:
-            if np.random.rand() < 0.5:
+            if np.random.rand() < 0.5 and self.max_replace > 0:
                 match, res = self.replace_champion(match, res)
-            else:
+            elif self.mask_champs:
                 match, res = self.partial_select(match, res)
+            else:
+                # do nothing
+                pass
         #match = [int(x) for x in match]
         #match = [self.champion_converter.get_champion_index_from_id(x) for x in match]
         return match, res

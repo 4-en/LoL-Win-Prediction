@@ -127,7 +127,7 @@ def plot_hist(hist) -> None:
     plt.show()
 
 # lr scheduler
-scheduler = tf.keras.callbacks.LearningRateScheduler(lambda epoch: 0.0001 * 0.95**epoch)
+scheduler = tf.keras.callbacks.LearningRateScheduler(lambda epoch: 0.0001 * 0.96**epoch)
 #win_chance_model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
 #              loss=tf.keras.losses.MeanSquaredError(),
 #              metrics=['accuracy'])
@@ -135,7 +135,7 @@ scheduler = tf.keras.callbacks.LearningRateScheduler(lambda epoch: 0.0001 * 0.95
 from augmentation import MatchAugmentation
 
 aug = MatchAugmentation(train_x, train_y, aug_chance=0.95, batch_size=32)
-val_aug = MatchAugmentation(val_x, val_y, aug_chance=0.0, batch_size=1)
+val_aug = MatchAugmentation(val_x, val_y, aug_chance=0.8, batch_size=1, max_replace=0)
 val_aug_x, val_aug_y = [], []
 for i in range(len(val_aug)):
     x, y = val_aug[i]
@@ -148,6 +148,8 @@ for i in range(len(val_aug)):
 val_aug_x = np.array(val_aug_x)
 val_aug_y = np.array(val_aug_y)
 
+
+
 from models.SynergyModel import SynergyModel
 from models.basic_embedding_model import BasicEmbedding
 
@@ -156,11 +158,15 @@ from models.DeepConv_model import DeepConv
 from models.prob_sample_model import SamplingModel
 
 model = DeepConv()
+# l2 regularization with binary crossentropy loss
 model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
               loss=tf.keras.losses.BinaryCrossentropy(),
               metrics=['accuracy'])
 
-hist = model.fit(aug, epochs=5, validation_data=(val_x, val_y), batch_size=32, callbacks=[scheduler])
+hist = model.fit(aug, epochs=5, validation_data=(val_aug_x, val_aug_y), batch_size=32, callbacks=[scheduler])
+
+# fit without augmentation
+#hist = model.fit(train_x, train_y, epochs=5, validation_data=(val_x, val_y), batch_size=32, callbacks=[scheduler])
 #hist = model.fit(train_x_1h, train_y, epochs=5, validation_data=(val_x_1h, val_y), batch_size=32, callbacks=[scheduler])
 
 plot_hist(hist)
