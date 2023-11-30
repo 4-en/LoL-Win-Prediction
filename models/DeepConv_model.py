@@ -21,7 +21,10 @@ class DeepConv(tf.keras.Model):
             self.clayers.append(self.order_expanded)
             self.clayers.append(tf.keras.layers.Conv1D(emb_dim, 10, strides=10, padding="same", activation='gelu', name="conv1d"+lname))
             #self.clayers.append(tf.keras.layers.MaxPool1D(2, name="maxpool"+lname))
+            # dropout
+            self.clayers.append(tf.keras.layers.Dropout(0.5, name="dropout"+lname))
             self.clayers.append(tf.keras.layers.Dense(emb_dim, activation='gelu', name="dense"+lname))
+            
             self.clayers.append(self.add_saved)
             # layer norm
             self.clayers.append(tf.keras.layers.LayerNormalization(name="layer_norm"+lname))
@@ -30,7 +33,9 @@ class DeepConv(tf.keras.Model):
         self.flatten = tf.keras.layers.Flatten()
 
 
+        self.dropout1 = tf.keras.layers.Dropout(0.5)
         self.dense1 = tf.keras.layers.Dense(emb_dim, activation='gelu')
+        self.dropout2 = tf.keras.layers.Dropout(0.5)
         self.dense2 = tf.keras.layers.Dense(emb_dim, activation='gelu')
         self.out = tf.keras.layers.Dense(1, activation='sigmoid')
 

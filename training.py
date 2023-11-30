@@ -134,7 +134,14 @@ scheduler = tf.keras.callbacks.LearningRateScheduler(lambda epoch: 0.0001 * 0.96
 
 from augmentation import MatchAugmentation
 
+# augment training data:
+# - shuffle champions, since order in champion select doesn't match specific role
+# - replace champions with random ones, more often then not, this will not change the outcome significantly, a lot of combinations possible
+# - mask out champions, so that the model can learn to predict the outcome of a match with a missing champion, eg during champion select
 aug = MatchAugmentation(train_x, train_y, aug_chance=0.95, batch_size=32)
+
+# only shuffle and mask, no replacement
+# same augmentations every epoch for validation data
 val_aug = MatchAugmentation(val_x, val_y, aug_chance=0.8, batch_size=1, max_replace=0)
 val_aug_x, val_aug_y = [], []
 for i in range(len(val_aug)):
@@ -157,17 +164,22 @@ from models.DeepConv_model import DeepConv
 
 from models.prob_sample_model import SamplingModel
 
-model = DeepConv()
+model = DeepConv(conv_layers=2)
 # l2 regularization with binary crossentropy loss
 model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
               loss=tf.keras.losses.BinaryCrossentropy(),
               metrics=['accuracy'])
 
-hist = model.fit(aug, epochs=5, validation_data=(val_aug_x, val_aug_y), batch_size=32, callbacks=[scheduler])
+#hist = model.fit(aug, epochs=10, validation_data=(val_aug_x, val_aug_y), batch_size=32, callbacks=[scheduler])
 
 # fit without augmentation
-#hist = model.fit(train_x, train_y, epochs=5, validation_data=(val_x, val_y), batch_size=32, callbacks=[scheduler])
+hist = model.fit(train_x, train_y, epochs=10, validation_data=(val_x, val_y), batch_size=32, callbacks=[scheduler])
 #hist = model.fit(train_x_1h, train_y, epochs=5, validation_data=(val_x_1h, val_y), batch_size=32, callbacks=[scheduler])
+
+# test accuracy
+test_loss, test_acc = model.evaluate(test_x, test_y, verbose=2)
+print("Test accuracy: ", test_acc)
+print("Test loss: ", test_loss)
 
 plot_hist(hist)
 # save model weights

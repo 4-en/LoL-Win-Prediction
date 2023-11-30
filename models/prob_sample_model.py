@@ -65,16 +65,18 @@ class SamplingModel(tf.keras.Model):
     def call(self, x):
         x = self.prob(x)
         mean = x[:, 0]
+        mean = tf.expand_dims(mean, -1)
         var = x[:, 1]
+        var = tf.expand_dims(var, -1)
 
         # get gaussian distribution with mean 1 and variance 0 for each sample
         # use parameterization trick to get samples
         # z = mu + sigma * epsilon
         # epsilon ~ N(0, 1)
-        epsilon = tf.random.normal((1,self.n_samples))
-        print(mean.shape, var.shape, epsilon.shape)
+        epsilon = tf.random.normal((self.n_samples,))
+        #print(mean.shape, var.shape, epsilon.shape)
         var = tf.math.exp(0.5 * var) * epsilon
-        print(var.shape)
+        #print(var.shape)
         samples = mean + var
         return samples
     
@@ -90,9 +92,9 @@ class SamplingModel(tf.keras.Model):
 if __name__ == '__main__':
     model = SamplingModel()
     # 10 random integers between 0 and 169
-    x = tf.random.uniform((1, 10), maxval=170, dtype=tf.int32)
+    x = tf.random.uniform((32, 10), maxval=170, dtype=tf.int32)
     # target = 1
-    y_target = tf.ones((1, 1))
+    y_target = tf.ones((32, 1))
     y = model(x)
 
     print("y_pred: ", y)
@@ -106,7 +108,7 @@ if __name__ == '__main__':
     model.summary()
 
     # test loss for all ones
-    all_ones = tf.ones((1,10))
+    all_ones = tf.ones((32,10))
     loss = tf.keras.losses.binary_crossentropy(y_target, all_ones)
     print("Loss: ", loss)
 
