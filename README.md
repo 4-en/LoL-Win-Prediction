@@ -1,4 +1,4 @@
-# LoL-Win-Prediction
+# LoL Win Chance Prediction
 ### A ML model that predicts league of legends game outcomes based on champion selection
 
 ## Introduction
