@@ -23,23 +23,48 @@ file_path = os.path.join(TARGET_DIR, FILENAME)
 converter = ChampionConverter()
 
 
-CLEAN_MATCHES
+CLEAN_MATCHES = True
+MIN_LEVEL = 7
+MIN_AVG_LEVEL = 10
+MIN_LEVEL_DIFF = 4
 
 def filter_player(player) -> bool:
     """
     Returns true if a player data is above threshold and match should be removed from list
     """
 
+    # gameEndedInEarlySurrender
+    if player["gameEndedInEarlySurrender"] == "True":
+        return True
+
     return False
 
-def convert_game(game)->list[int]:
+def split_iterable(data, weights=(1,1)) -> list:
+    # splits an iterable into multiple iterables based on weights
+    # weights should be a tuple of ints
+    # returns a list of iterables
+    ret = []
+    total = sum(weights)
+    before = 0
+    for weight in weights:
+        ret.append(data[int(before/total*len(data)):int((before+weight)/total*len(data))])
+        before += weight
+    return ret
+
+
+def convert_game(game, filter_matches=CLEAN_MATCHES)->list[int]:
     # converts a game to a list of ints
     # first 5 are blue champ ids, next 5 are red champ ids, last one is 1 if blue won, 0 if red won
     blue_team = []
     red_team = []
     blue_win = None
+    levels = []
     for player in game:
+        if filter_matches and filter_player(player):
+            raise Exception("Player is below threshold!")
         champion_name = player["championName"]
+        level = int(player["champLevel"])
+        levels.append(level)
         champion_id = -1
         while champion_id == -1:
             try:
@@ -62,6 +87,19 @@ def convert_game(game)->list[int]:
             else:
                 if blue_win == (player["win"] == "True"):
                     raise Exception("Blue win is not consistent!")
+                
+    if filter_matches:
+        avg_level = sum(levels)/len(levels)
+        if avg_level < MIN_AVG_LEVEL:
+            raise Exception("Average level is below 10!")
+        lowest_level = min(levels)
+
+        # try to remove games with afk players
+        if lowest_level < MIN_LEVEL:
+            raise Exception("Lowest level is below 7!")
+        if lowest_level < avg_level-MIN_LEVEL_DIFF:
+            raise Exception("Lowest level is more than 3 below average level!")
+    
     both_teams = blue_team+red_team
     both_teams.append(1 if blue_win else 0)
     return both_teams
@@ -98,16 +136,18 @@ def load_raw_csv(file_path = file_path) -> dict:
     return games
 
 
-def convert_data():
-    games = load_raw_csv()
+def convert_data(games=None, save_dir="/", filter_matches=CLEAN_MATCHES):
+    if games is None:
+        games = load_raw_csv()
+        games = list(games.values())
 
     # convert games to tuples
     game_data = []
     print("Converting games...")
     e_count = 0
-    for game in tqdm.tqdm(games.values()):
+    for game in tqdm.tqdm(games):
         try:
-            game_list = convert_game(game)
+            game_list = convert_game(game, filter_matches=filter_matches)
             game_data.append(game_list)
         except:
             e_count += 1
@@ -120,24 +160,22 @@ def convert_data():
     print("Shuffling data...")
     np.random.shuffle(game_data)
 
+    save_file = os.path.join(save_dir, "game_data.npy")
 
     # print length of game data
     print("Length of game data:", len(game_data))
     # save data
-    print("Saving data...")
+    #print("Saving data...")
     game_data = np.array(game_data)
-    np.save("game_data.npy", game_data)
-    print("Done!")
+    #np.save(save_file, game_data)
+    #print("Done!")
 
-    print("Saving csv...")
-    save_csv(game_data)
-    print("Done!")
+    # save csv
+    #print("Saving csv...")
+    #save_csv(game_data)
+    #print("Done!")
 
-    # load data
-    print("Loading data...")
-    data_loaded = np.load("game_data.npy")
-    while input("Do you want to print a random game? (y/n)") == "y":
-        print(data_loaded[np.random.randint(0, len(data_loaded))])
+    return game_data
 
 
 def get_data():
