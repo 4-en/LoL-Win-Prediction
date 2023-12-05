@@ -3,6 +3,7 @@
 from typing import Any
 import tensorflow as tf
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 CHAMP_NUM = 170
@@ -71,7 +72,7 @@ train_x, _, val_x, _, test_x, _ = split_data(x, y)
 
 
 avg_win_chance = np.average(train_y)
-print("Average win chance: ", avg_win_chance)
+print("Average Blue side win chance: ", avg_win_chance)
 
 class TrivialModel(tf.keras.Model):
     """A trivial model that always predicts the average win chance"""
@@ -106,7 +107,7 @@ class BaselineModel(tf.keras.Model):
         x = self.dense4(x)
         return self.dense5(x)
 
-import matplotlib.pyplot as plt
+
 def plot_hist(hist) -> None:
     
     plt.plot(hist.history['accuracy'])
