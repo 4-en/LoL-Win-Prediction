@@ -22,6 +22,16 @@ file_path = os.path.join(TARGET_DIR, FILENAME)
 
 converter = ChampionConverter()
 
+
+CLEAN_MATCHES
+
+def filter_player(player) -> bool:
+    """
+    Returns true if a player data is above threshold and match should be removed from list
+    """
+
+    return False
+
 def convert_game(game)->list[int]:
     # converts a game to a list of ints
     # first 5 are blue champ ids, next 5 are red champ ids, last one is 1 if blue won, 0 if red won
@@ -66,10 +76,9 @@ def save_csv(data):
         for row in data:
             writer.writerow(row)
 
-
-
-def convert_data():
+def load_raw_csv(file_path = file_path) -> dict:
     games = {}
+    print("Loading game data...")
     with open(file_path, "r", encoding="cp949") as f:
         reader = csv.DictReader(f)
         for row in tqdm.tqdm(reader):
@@ -86,11 +95,26 @@ def convert_data():
     # print number of games
     print("Number of games:", len(games))
 
+    return games
+
+
+def convert_data():
+    games = load_raw_csv()
+
     # convert games to tuples
     game_data = []
     print("Converting games...")
+    e_count = 0
     for game in tqdm.tqdm(games.values()):
-        game_data.append(convert_game(game))
+        try:
+            game_list = convert_game(game)
+            game_data.append(game_list)
+        except:
+            e_count += 1
+
+    print(f"Removed {e_count} games from dataset")
+
+    print("Number of games:", len(game_data))
 
     # shuffle data
     print("Shuffling data...")
