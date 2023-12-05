@@ -164,8 +164,7 @@ from models.DeepConv_model import DeepConv
 
 from models.prob_sample_model import SamplingModel
 
-model = DeepConv(conv_layers=2)
-# l2 regularization with binary crossentropy loss
+model = BasicEmbedding()
 model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
               loss=tf.keras.losses.BinaryCrossentropy(),
               metrics=['accuracy'])
