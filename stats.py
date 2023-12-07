@@ -129,6 +129,33 @@ class ModelComparator:
 
         plt.show()
 
+from sklearn.decomposition import PCA
+def visualize_embeddings(embedding_layer, size):
+    """Visualizes the embeddings from an embedding layer
+    Args:
+        embedding_layer: the embedding layer to visualize
+        size: the size of the vocabulary
+    """
+    conv = champion_dicts.ChampionConverter()
+    # get embeddings
+    embeddings = embedding_layer.get_weights()[0]
+    # embeddings.shape = (vocab_size, embedding_dim)
+    # reduce dimensions to 2 for visualization
+    pca = PCA(n_components=2)
+    embeddings = pca.fit_transform(embeddings)
+    # embeddings.shape = (vocab_size, 2)
+    # plot
+    plt.figure(figsize=(10,10))
+    for i in range(size):
+        plt.scatter(embeddings[i,0], embeddings[i,1])
+        name = "Unknown"
+        try:
+            name = conv.get_champion_name_from_index(i)
+        except:
+            pass
+        plt.annotate(name, (embeddings[i,0], embeddings[i,1]))
+    plt.show()
+
 
 
 def export_embeddings(embedding_layer, size, path):
@@ -139,8 +166,28 @@ def export_embeddings(embedding_layer, size, path):
         path: the path to save the embeddings
     """
     conv = champion_dicts.ChampionConverter()
-    f = open(path, "w")
+    # write vectors
+    f = open(path+"_data.tsv", "w")
     for i in range(size):
-        name = conv.get_champion_name_from_index(i)
-        f.write(name + " " + " ".join([str(x) for x in embedding_layer.get_weights()[0][i]]) + "\n")
+        f.write("\t".join([str(x) for x in embedding_layer.get_weights()[0][i]]) + "\n")
     f.close()
+
+    # write metadata
+    f = open(path+"_metadata.tsv", "w")
+    for i in range(size):
+        name = "Unknown"
+        try:
+            name = conv.get_champion_name_from_index(i)
+        except:
+            pass
+        f.write(name + "\n")
+    f.close()
+
+if __name__ == "__main__":
+    # create fake data
+    import tensorflow as tf
+
+    embedding = tf.keras.layers.Embedding(10, 5)
+    embedding.build((None,))
+    labels = tf.constant([0,1,2,3,4,5,6,7,8,9])
+    visualize_embeddings(embedding, 10)

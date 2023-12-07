@@ -164,8 +164,9 @@ from models.basic_embedding_model import BasicEmbedding
 from models.DeepConv_model import DeepConv
 
 from models.prob_sample_model import SamplingModel
+import stats
 
-model = DeepConv()
+model = DeepConv(emb_dim=32)
 model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
               loss=tf.keras.losses.BinaryCrossentropy(),
               metrics=['accuracy'])
@@ -173,8 +174,10 @@ model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
 #hist = model.fit(aug, epochs=10, validation_data=(val_aug_x, val_aug_y), batch_size=32, callbacks=[scheduler])
 
 # fit without augmentation
-hist = model.fit(train_x, train_y, epochs=6, validation_data=(val_x, val_y), batch_size=16, callbacks=[scheduler])
+hist = model.fit(train_x, train_y, epochs=2, validation_data=(val_x, val_y), batch_size=32, callbacks=[scheduler])
 #hist = model.fit(train_x_1h, train_y, epochs=5, validation_data=(val_x_1h, val_y), batch_size=32, callbacks=[scheduler])
+
+stats.visualize_embeddings(model.embedding, CHAMP_NUM)
 
 # test accuracy
 test_loss, test_acc = model.evaluate(test_x, test_y, verbose=2)

@@ -14,40 +14,89 @@ class LoLTransformerBlock(tf.keras.layers.Layer):
         self.embedding_dim = embedding_dim
 
         # multi-head attention
-        self.lin_qkv = tf.keras.layers.Dense(3*self.embedding_dim*self.num_heads, input_shape=(self.embedding_dim,), activation=None)
+        self.query = tf.keras.layers.Dense(self.embedding_dim*num_heads, input_shape=(self.embedding_dim,), activation=None)
+        self.key = tf.keras.layers.Dense(self.embedding_dim*num_heads, input_shape=(self.embedding_dim,), activation=None)
+        self.value = tf.keras.layers.Dense(self.embedding_dim*num_heads, input_shape=(self.embedding_dim,), activation=None)
+
+        self.sqrt_d = tf.math.sqrt(tf.cast(self.embedding_dim, tf.float32))
+
 
         self.layernorm1 = tf.keras.layers.LayerNormalization()
 
-        #self.head_ffs = [tf.keras.layers.Dense()]
+        self.combineHeads = tf.keras.layers.Dense(self.embedding_dim, input_shape=(self.embedding_dim*num_heads,), activation=None)
+
+        self.nonLin = tf.keras.layers.Dense(self.embedding_dim, input_shape=(self.embedding_dim,), activation='gelu')
 
     def split_heads(self, x):
         # x.shape = (batch_size, 10, embedding_dim)
-        # split into num_heads
-        x = self.lin_qkv(x)
-        # x.shape = (batch_size, 10, 3*embedding_dim*num_heads)
-        x.reshape(-1, 10, self.num_heads, 3, self.embedding_dim)
-
-        # split into q, k, v
-        q = x[:,:,:,0,:]
-        k = x[:,:,:,1,:]
-        v = x[:,:,:,2,:]
+        # split into qvk for each head
+        q = tf.reshape(self.query(x), (x.shape[0], self.num_heads, 10, self.embedding_dim))
+        k = tf.reshape(self.key(x), (x.shape[0], self.num_heads, 10, self.embedding_dim))
+        v = tf.reshape(self.value(x), (x.shape[0], self.num_heads, 10, self.embedding_dim))
 
         return q, k, v
     
     def scaled_dot_product_attention(self, q, k, v):
         # perform self attention for each head
+        # q, k, v shape = (batch_size, num_heads, 10, embedding_dim)
 
+        # calculate attention weights
+        # reshape for broadcasting
+        # q shape = (batch_size, num_heads, 10, 1, embedding_dim)
+        # k shape = (batch_size, num_heads, 1, 10, embedding_dim)
+        #q = tf.reshape(q, (-1, self.num_heads, 10, 1, self.embedding_dim))
+        #k = tf.reshape(k, (-1, self.num_heads, 1, 10, self.embedding_dim))
+        attention_weights = tf.matmul(q, k, transpose_b=True) / self.sqrt_d
+        # shape = (batch_size, num_heads, 10, 10)
 
-        
+        #attention_weights = tf.reshape(attention_weights, (-1, self.num_heads, 10, 10, 1))
+        # softmax
+        attention_weights = tf.nn.softmax(attention_weights, axis=2)
+        # shape = (batch_size, num_heads, 10, 10)
+
+        # apply attention weights to values
+        # v shape = (batch_size, num_heads, 10, embedding_dim)
+        output = tf.matmul(attention_weights, tf.reshape(v, (-1, self.num_heads, 10, self.embedding_dim)))
+        # shape = (batch_size, num_heads, 10, embedding_dim)
+        print(output.shape)
+        input()
+        # sum over the 10 values
+        output = tf.reduce_sum(output, axis=2)
+        # output shape = (batch_size, num_heads, 10, embedding_dim)
+        return output
+
+    def combine_heads(self, x):
+        # x.shape = (batch_size, num_heads, 10, embedding_dim)
+        # combine heads
+        x = tf.reshape(x, (-1, self.num_heads*10, self.embedding_dim))
+        # x.shape = (batch_size, num_heads*10, embedding_dim)
+        x = self.combineHeads(x)
+        # x.shape = (batch_size, 10, embedding_dim)
+        return x
 
     def call(self, x):
+        # x.shape = (batch_size, 10, embedding_dim)
         x_original = x
-        # do something with x...
+        
+        # multi-head attention
+        q, k, v = self.split_heads(x)
+        # q, k, v shape = (batch_size, num_heads, 10, embedding_dim)
+        x = self.scaled_dot_product_attention(q, k, v)
+        # x shape = (batch_size, num_heads, 10, embedding_dim)
+        x = self.combine_heads(x)
+        # x.shape = (batch_size, 10, embedding_dim)
 
-        # combine with original input
+        # residual connection
         x = x + x_original
         x = self.layernorm1(x)
-        pass
+        # x.shape = (batch_size, 10, embedding_dim)
+        # feed forward
+        x = self.nonLin(x)
+        # x.shape = (batch_size, 10, embedding_dim)
+        # residual connection
+        x = x + x_original
+        x = self.layernorm1(x)
+        return x
 
 
 class LoLTransformer(tf.keras.Model):
@@ -90,3 +139,19 @@ class LoLTransformer(tf.keras.Model):
         x = self.dense(x)
         # x.shape = (batch_size, 1)
         return x
+    
+
+if __name__ == "__main__":
+    # create fake data
+    batch_size = 2
+
+    x = tf.random.uniform((batch_size, 10), minval=0, maxval=170, dtype=tf.int32)
+    y = tf.random.uniform((batch_size, 1), minval=0, maxval=2, dtype=tf.int32)
+
+    # create model
+    model = LoLTransformer()
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+
+    # test model
+    y_pred = model(x)
+    print(y_pred.shape)
