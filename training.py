@@ -10,7 +10,7 @@ CHAMP_NUM = 170
 PLAYER_NUM = 10
 
 # load data
-DATAPATH = "data/kr_24h/game_data.npy"
+DATAPATH = "data/kr_24h/game_data_filtered.npy"
 data = np.load(DATAPATH)
 print("Loaded data of shape: ", data.shape)
 
@@ -139,7 +139,7 @@ from augmentation import MatchAugmentation
 # - shuffle champions, since order in champion select doesn't match specific role
 # - replace champions with random ones, more often then not, this will not change the outcome significantly, a lot of combinations possible
 # - mask out champions, so that the model can learn to predict the outcome of a match with a missing champion, eg during champion select
-aug = MatchAugmentation(train_x, train_y, aug_chance=0.90, batch_size=16)
+aug = MatchAugmentation(train_x, train_y, aug_chance=0.90, batch_size=16, max_replace=5)
 
 # only shuffle and mask, no replacement
 # same augmentations every epoch for validation data
@@ -167,7 +167,7 @@ from models.prob_sample_model import SamplingModel
 import stats
 
 #model = DeepConv(emb_dim=32, conv_layers=3)
-model = BasicEmbedding(embed_dim=8)
+model = BasicEmbedding(embed_dim=16)
 model.compile(optimizer=tf.keras.optimizers.Adam(),
               loss=tf.keras.losses.BinaryCrossentropy(),
               metrics=['accuracy'])
@@ -177,6 +177,8 @@ hist = model.fit(aug, epochs=5, validation_data=(val_aug_x, val_aug_y), batch_si
 # fit without augmentation
 #hist = model.fit(aug, epochs=3, validation_data=(val_x, val_y), batch_size=32, callbacks=[scheduler])
 #hist = model.fit(train_x_1h, train_y, epochs=5, validation_data=(val_x_1h, val_y), batch_size=32, callbacks=[scheduler])
+
+stats.print_embedding_norms(model.embedding, CHAMP_NUM)
 
 stats.visualize_embeddings(model.embedding, CHAMP_NUM)
 
