@@ -165,14 +165,14 @@ def convert_data(games=None, save_dir="/", filter_matches=CLEAN_MATCHES):
     print("Shuffling data...")
     np.random.shuffle(game_data)
 
-    save_file = os.path.join(save_dir, "game_data.npy")
+    save_file = os.path.join(save_dir, "game_data_filtered.npy")
 
     # print length of game data
     print("Length of game data:", len(game_data))
     # save data
     #print("Saving data...")
     game_data = np.array(game_data)
-    #np.save(save_file, game_data)
+    np.save(save_file, game_data)
     #print("Done!")
 
     # save csv
@@ -209,5 +209,5 @@ def get_data():
 
 
 if __name__ == "__main__":
-    get_data()
+    #get_data()
     convert_data()
