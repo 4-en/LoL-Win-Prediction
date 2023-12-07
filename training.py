@@ -115,7 +115,7 @@ def plot_hist(hist) -> None:
     plt.title('model accuracy')
     plt.ylabel('accuracy')
     plt.xlabel('epoch')
-    plt.legend(['train', 'test'], loc='upper left')
+    plt.legend(['train', 'val'], loc='upper left')
     plt.show()
 
     # loss
@@ -124,11 +124,11 @@ def plot_hist(hist) -> None:
     plt.title('model loss')
     plt.ylabel('loss')
     plt.xlabel('epoch')
-    plt.legend(['train', 'test'])
+    plt.legend(['train', 'val'])
     plt.show()
 
 # lr scheduler
-scheduler = tf.keras.callbacks.LearningRateScheduler(lambda epoch: 0.0001 * 0.96**epoch)
+scheduler = tf.keras.callbacks.LearningRateScheduler(lambda epoch: 0.0001 * 0.97**epoch)
 #win_chance_model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
 #              loss=tf.keras.losses.MeanSquaredError(),
 #              metrics=['accuracy'])
@@ -139,7 +139,7 @@ from augmentation import MatchAugmentation
 # - shuffle champions, since order in champion select doesn't match specific role
 # - replace champions with random ones, more often then not, this will not change the outcome significantly, a lot of combinations possible
 # - mask out champions, so that the model can learn to predict the outcome of a match with a missing champion, eg during champion select
-aug = MatchAugmentation(train_x, train_y, aug_chance=0.95, batch_size=16)
+aug = MatchAugmentation(train_x, train_y, aug_chance=0.90, batch_size=16)
 
 # only shuffle and mask, no replacement
 # same augmentations every epoch for validation data
@@ -166,15 +166,16 @@ from models.DeepConv_model import DeepConv
 from models.prob_sample_model import SamplingModel
 import stats
 
-model = DeepConv(emb_dim=32)
-model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
+#model = DeepConv(emb_dim=32, conv_layers=3)
+model = BasicEmbedding(embed_dim=8)
+model.compile(optimizer=tf.keras.optimizers.Adam(),
               loss=tf.keras.losses.BinaryCrossentropy(),
               metrics=['accuracy'])
 
-#hist = model.fit(aug, epochs=10, validation_data=(val_aug_x, val_aug_y), batch_size=32, callbacks=[scheduler])
+hist = model.fit(aug, epochs=5, validation_data=(val_aug_x, val_aug_y), batch_size=16, callbacks=[scheduler])
 
 # fit without augmentation
-hist = model.fit(train_x, train_y, epochs=2, validation_data=(val_x, val_y), batch_size=32, callbacks=[scheduler])
+#hist = model.fit(aug, epochs=3, validation_data=(val_x, val_y), batch_size=32, callbacks=[scheduler])
 #hist = model.fit(train_x_1h, train_y, epochs=5, validation_data=(val_x_1h, val_y), batch_size=32, callbacks=[scheduler])
 
 stats.visualize_embeddings(model.embedding, CHAMP_NUM)
@@ -186,7 +187,7 @@ print("Test loss: ", test_loss)
 
 plot_hist(hist)
 # save model weights
-#model.save_weights("models/basic_embedding_model_weights.h5")
+#model.save_weights("models/deep_conv_2_weights.h5")
 
 def find_optimal_champion():
     # get random sample from test data
