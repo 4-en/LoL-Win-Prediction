@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import champion_dicts
+import numpy as np
 
 def plot_history(history):
     # accuracy
@@ -155,6 +156,52 @@ def visualize_embeddings(embedding_layer, size):
             pass
         plt.annotate(name, (embeddings[i,0], embeddings[i,1]))
     plt.show()
+
+
+def print_embedding_norms(embedding_layer, size):
+    N_SMALLEST = 10
+    conv = champion_dicts.ChampionConverter()
+    # get embeddings
+    embeddings = embedding_layer.get_weights()[0]
+
+    smallest = []
+
+    norm_matrix = np.zeros((size, size))
+    for i in range(size):
+        for j in range(size):
+            if i==j:
+                norm_matrix[i,j] = 999999
+                continue
+
+            if i>j:
+                norm_matrix[i, j] = norm_matrix[j, i]
+                continue
+
+            em1 = embeddings[i]
+            em2 = embeddings[j]
+
+            norm = np.linalg.norm(em1-em2)
+            norm_matrix[i, j] = norm
+
+            if len(smallest)<N_SMALLEST:
+                smallest.append((float(norm), i, j))
+            elif smallest[N_SMALLEST-1][0]>float(norm):
+                smallest.pop()
+                smallest.append((float(norm), i, j))
+            else:
+                continue
+
+            smallest.sort(key=lambda x:x[0])
+
+    print("Closest champion embeddings:")
+    for i in smallest:
+        norm = i[0]
+        name1 = conv.get_champion_name_from_index(i[1])
+        name2 = conv.get_champion_name_from_index(i[2])
+        print(f"{name1} and {name2}: {norm}")
+
+    
+
 
 
 
