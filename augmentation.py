@@ -8,14 +8,17 @@ from keras.utils import Sequence
 
 class MatchAugmentation(Sequence):
 
-    def __init__(self, data, labels, batch_size=32, aug_chance=0.6, adjust_labels=False, mask_champs=True, max_replace=1):
+    def __init__(self, data, labels, batch_size=32, aug_chance=0.6, adjust_labels=False, mask_champs=True, max_replace=1, swap_teams=False):
         self.champion_converter = ChampionConverter()
         self.data = data
         self.labels = labels
         self.batch_size = batch_size
         self.aug_chance = aug_chance
         self.mask_champs = mask_champs
+        if max_replace > 10:
+            max_replace = 10
         self.max_replace = max_replace
+        self.swap_teams = swap_teams
 
         # TODO: implement label adjustment
         self.adjust_labels = adjust_labels # if true, labels are moved towards 0.5 depending on amount of augmentations
@@ -70,7 +73,7 @@ class MatchAugmentation(Sequence):
         # 0.5 chance to swap teams
         # this makes side difference irrelevant and only focuses on champion difference
         # arguable if this is a good thing
-        if np.random.rand() < 0.5:
+        if self.swap_teams and np.random.rand() < 0.5:
             # invert labels
             return np.concatenate((team2, team1)), 1-label
 
@@ -81,11 +84,24 @@ class MatchAugmentation(Sequence):
         Since changing one champion is unlikely to change the winchance by much, and even if it does
         the favoured team could still lose, we can replace a random champion with a random champion to generate more samples.
         It is more likely that the result is still correct than not."""
-        replace_idx = np.random.randint(0, len(match))
-        new_id = np.random.randint(1, self.champion_converter.champion_count)
-        while new_id in match:
+
+        # random amount of replacements [1, self.max_replace]
+        replacements = 1
+        if self.max_replace > 1:
+            replacements = np.random.randint(1, self.max_replace+1)
+
+        # determine positions that are replaces, don't replace same pos twice
+        positions = [ i for i in range(10)]
+        np.random.shuffle(positions)
+
+        for i in range(replacements):
+            replace_idx = positions[i]
             new_id = np.random.randint(1, self.champion_converter.champion_count)
-        match[replace_idx] = new_id
+
+            # dont insert id that is already in the match, since this is not possible in ranked matches
+            while new_id in match:
+                new_id = np.random.randint(1, self.champion_converter.champion_count)
+            match[replace_idx] = new_id
         return match, label
 
     def partial_select(self, match, label):
