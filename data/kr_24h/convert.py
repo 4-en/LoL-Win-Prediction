@@ -36,6 +36,11 @@ def filter_player(player) -> bool:
     # gameEndedInEarlySurrender
     if player["gameEndedInEarlySurrender"] == "True":
         return True
+    
+    timePlayed = player["timePlayed"]
+    timePlayed = int(timePlayed) / 60
+    if timePlayed < 22:
+        return True
 
     return False
 
