@@ -21,18 +21,20 @@ class MatchAugmentation(Sequence):
         self.adjust_labels = adjust_labels # if true, labels are moved towards 0.5 depending on amount of augmentations
 
     def __getitem__(self, idx):
-        matches = np.zeros((self.batch_size, 10))
-        labels = np.zeros((self.batch_size, 1))
+        matches = []
+        labels = []
         batch_i = 0
         while batch_i < self.batch_size:
-            match, res = self.data[idx * batch_i + batch_i], self.labels[idx * batch_i + batch_i]
+            match, res = self.data[idx * self.batch_size + batch_i], self.labels[idx * self.batch_size + batch_i]
 
-            matches[batch_i,:], labels[batch_i,:] = self.augment_match(match, res)
+            match, res = self.augment_match(match, res)
+            matches.append(match)
+            labels.append(res)
             
             batch_i += 1
 
-        #matches = np.array(matches)
-        #labels = np.array(labels)
+        matches = np.array(matches)
+        labels = np.array(labels)
         return matches, labels
 
     
@@ -41,7 +43,11 @@ class MatchAugmentation(Sequence):
     
     def augment_match(self, match, res):
         match = match.copy()
+        res = res.copy()
+        #print("Before", match, res)
         match, res = self.shuffle_match(match, res)
+        #print("After", match, res)
+
         if np.random.rand() < self.aug_chance:
             if np.random.rand() < 0.5 and self.max_replace > 0:
                 match, res = self.replace_champion(match, res)
