@@ -139,7 +139,7 @@ from augmentation import MatchAugmentation
 # - shuffle champions, since order in champion select doesn't match specific role
 # - replace champions with random ones, more often then not, this will not change the outcome significantly, a lot of combinations possible
 # - mask out champions, so that the model can learn to predict the outcome of a match with a missing champion, eg during champion select
-aug = MatchAugmentation(train_x, train_y, aug_chance=0.95, batch_size=32)
+aug = MatchAugmentation(train_x, train_y, aug_chance=0.95, batch_size=16)
 
 # only shuffle and mask, no replacement
 # same augmentations every epoch for validation data
@@ -165,7 +165,7 @@ from models.DeepConv_model import DeepConv
 
 from models.prob_sample_model import SamplingModel
 
-model = BasicEmbedding()
+model = DeepConv()
 model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
               loss=tf.keras.losses.BinaryCrossentropy(),
               metrics=['accuracy'])
@@ -173,7 +173,7 @@ model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
 #hist = model.fit(aug, epochs=10, validation_data=(val_aug_x, val_aug_y), batch_size=32, callbacks=[scheduler])
 
 # fit without augmentation
-hist = model.fit(train_x, train_y, epochs=10, validation_data=(val_x, val_y), batch_size=32, callbacks=[scheduler])
+hist = model.fit(train_x, train_y, epochs=6, validation_data=(val_x, val_y), batch_size=16, callbacks=[scheduler])
 #hist = model.fit(train_x_1h, train_y, epochs=5, validation_data=(val_x_1h, val_y), batch_size=32, callbacks=[scheduler])
 
 # test accuracy
