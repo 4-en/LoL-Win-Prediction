@@ -131,15 +131,23 @@ class ModelComparator:
         plt.show()
 
 from sklearn.decomposition import PCA
-def visualize_embeddings(embedding_layer, size):
-    """Visualizes the embeddings from an embedding layer
+from sklearn.cluster import KMeans
+def visualize_embeddings(embedding_layer, size, k_clusters=10):
+    """Visualizes the embeddings from an embedding layer as a 2d scatter plot
     Args:
         embedding_layer: the embedding layer to visualize
         size: the size of the vocabulary
+        k_clusters: amount of clusters for k means clustering. Clusters are displayed in the same color
     """
     conv = champion_dicts.ChampionConverter()
     # get embeddings
     embeddings = embedding_layer.get_weights()[0]
+
+    # K means clustering
+    k = k_clusters
+    kmeans = KMeans(n_clusters=k)
+    clusters = kmeans.fit_predict(embeddings)
+    colors = np.random.rand(k, 3)
     # embeddings.shape = (vocab_size, embedding_dim)
     # reduce dimensions to 2 for visualization
     pca = PCA(n_components=2)
@@ -148,7 +156,8 @@ def visualize_embeddings(embedding_layer, size):
     # plot
     plt.figure(figsize=(10,10))
     for i in range(size):
-        plt.scatter(embeddings[i,0], embeddings[i,1])
+        color = colors[clusters[i]]
+        plt.scatter(embeddings[i,0], embeddings[i,1], c=color)
         name = "Unknown"
         try:
             name = conv.get_champion_name_from_index(i)
@@ -158,8 +167,7 @@ def visualize_embeddings(embedding_layer, size):
     plt.show()
 
 
-def print_embedding_norms(embedding_layer, size):
-    N_SMALLEST = 10
+def print_embedding_norms(embedding_layer, size, n_closest=10):
     conv = champion_dicts.ChampionConverter()
     # get embeddings
     embeddings = embedding_layer.get_weights()[0]
@@ -183,9 +191,9 @@ def print_embedding_norms(embedding_layer, size):
             norm = np.linalg.norm(em1-em2)
             norm_matrix[i, j] = norm
 
-            if len(smallest)<N_SMALLEST:
+            if len(smallest)<n_closest:
                 smallest.append((float(norm), i, j))
-            elif smallest[N_SMALLEST-1][0]>float(norm):
+            elif smallest[n_closest-1][0]>float(norm):
                 smallest.pop()
                 smallest.append((float(norm), i, j))
             else:
@@ -195,9 +203,17 @@ def print_embedding_norms(embedding_layer, size):
 
     print("Closest champion embeddings:")
     for i in smallest:
-        norm = i[0]
-        name1 = conv.get_champion_name_from_index(i[1])
-        name2 = conv.get_champion_name_from_index(i[2])
+        norm = round(i[0], 4)
+        name1 = "Unknown"
+        name2 = "Unknown"
+        try:
+            name1 = conv.get_champion_name_from_index(i[1])
+        except:
+            pass
+        try:
+            name2 = conv.get_champion_name_from_index(i[2])
+        except:
+            pass
         print(f"{name1} and {name2}: {norm}")
 
     
@@ -237,4 +253,5 @@ if __name__ == "__main__":
     embedding = tf.keras.layers.Embedding(10, 5)
     embedding.build((None,))
     labels = tf.constant([0,1,2,3,4,5,6,7,8,9])
+    print_embedding_norms(embedding, 10)
     visualize_embeddings(embedding, 10)
