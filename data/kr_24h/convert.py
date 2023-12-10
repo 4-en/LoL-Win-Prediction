@@ -189,19 +189,25 @@ def get_data():
     filename = os.path.join(TARGET_DIR, FILENAME)
     if os.path.exists(filename):
         print("File already downloaded!")
-        return
+        return True
     
     if not os.path.exists(TARGET_DIR):
         os.mkdir(TARGET_DIR)
 
     if not os.path.exists(TARGET_NAME):
-        print("Downloading...")
-        urllib.request.urlretrieve(URL, TARGET_NAME)
-        print("Done!")
+        # automatic download doesnt work, so just print url
+        print("File not found. Download the dataset and try again.")
+        print(URL)
+        return False
+        #print("Downloading...")
+        #urllib.request.urlretrieve(URL, TARGET_NAME)
+        #print("Done!")
 
     print("Unzipping...")
     with zipfile.ZipFile(TARGET_NAME, "r") as zip_ref:
         zip_ref.extractall(TARGET_DIR)
+
+    return True
 
     print("Done!")
 
@@ -209,5 +215,5 @@ def get_data():
 
 
 if __name__ == "__main__":
-    #get_data()
-    convert_data()
+    if get_data():
+        convert_data()

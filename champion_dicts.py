@@ -45,23 +45,53 @@ class ChampionConverter:
 
         self.champion_count = len(self.champion_names)
 
+    def is_list(self, i):
+        # TODO: add better check later, just check for list now
+        return type(i) == list
+
 
     def get_champion_name_from_index(self, champion_index):
+        if self.is_list(champion_index):
+            return [self.get_champion_name_from_index(i) for i in champion_index]
+
         return self.champion_indices_to_names[champion_index]
 
     def get_champion_id_from_index(self, champion_index):
+        if self.is_list(champion_index):
+            return [self.get_champion_id_from_index(i) for i in champion_index]
         return self.champion_indices_to_ids[champion_index]
 
     def get_champion_index_from_id(self, champion_id):
+        if self.is_list(champion_id):
+            return [self.get_champion_index_from_id(i) for i in champion_id]
         return self.champion_ids_to_indices[champion_id]
-
-    def get_champion_index_from_name(self, champion_name):
-        return self.champion_names_to_indices[champion_name]
     
-    def get_champion_id_from_name(self, champion_name):
-        return self.champion_names_to_ids[champion_name]
+    def get_champion_name(self, champion_name, try_closest=True):
+        if champion_name in self.champion_ids_to_indices:
+            return champion_name
+    
+        if not try_closest:
+            raise Exception("Failed to find champion by name")
+        closest = self.get_closest_champion_name(champion_name)
+        if closest == None:
+            raise Exception("Failed to find champion by name")
+        
+        return closest
+
+
+    def get_champion_index_from_name(self, champion_name, try_closest=True):
+        if self.is_list(champion_name):
+            return [self.get_champion_index_from_name(i, try_closest=try_closest) for i in champion_name]
+        return self.champion_names_to_indices[self.get_champion_name(champion_name, try_closest=try_closest)]
+    
+    def get_champion_id_from_name(self, champion_name, try_closest=True):
+        if self.is_list(champion_name):
+            return [self.get_champion_id_from_name(i, try_closest=try_closest) for i in champion_name]
+        return self.champion_names_to_ids[self.get_champion_name(champion_name, try_closest=try_closest)]
 
     def get_champion_name_from_id(self, champion_id):
+        if self.is_list(champion_id):
+            return [self.get_champion_name_from_id(i) for i in champion_id]
         return self.champion_ids_to_names[champion_id]
     
     def get_closest_champion_name(self, champion_name):

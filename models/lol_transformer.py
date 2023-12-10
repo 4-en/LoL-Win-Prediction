@@ -13,6 +13,8 @@ class LoLTransformerBlock(tf.keras.layers.Layer):
         self.num_heads = num_heads
         self.embedding_dim = embedding_dim
 
+        self.attention = tf.keras.layers.MultiHeadAttention()
+
         self.flatten = tf.keras.layers.Flatten()
 
         # multi-head attention
@@ -91,12 +93,15 @@ class LoLTransformerBlock(tf.keras.layers.Layer):
         x = x + x_original
         x = self.layernorm1(x)
         # x.shape = (batch_size, 10, embedding_dim)
+
         # feed forward
         x = self.nonLin(x)
         # x.shape = (batch_size, 10, embedding_dim)
+
         # residual connection
         x = x + x_original
         x = self.layernorm1(x)
+
         return x
 
 
