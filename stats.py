@@ -76,8 +76,10 @@ class ModelStats:
         self.test_loss = test_acc_loss[1]
 
 class ModelComparator:
-    def __init__(self):
+    def __init__(self, test_data):
         self.models = []
+        self.test_x = test_data[0]
+        self.test_y = test_data[1]
 
     def add_model(self, model, history, test_x, test_y, name="Unnamed model"):
         """Adds a model to the comparator
@@ -91,6 +93,13 @@ class ModelComparator:
         test_acc_loss = model.evaluate(test_x, test_y)
         print("Test accuracy: ", test_acc_loss[0])
         print("Test loss: ", test_acc_loss[1])
+
+        # remove model with the same name
+        for i in range(len(self.models)):
+            if self.models[i].name == name:
+                self.models.pop(i)
+                break
+
         self.models.append(ModelStats(history, test_acc_loss, name))
 
     def sort_by_test_acc(self):
@@ -129,6 +138,14 @@ class ModelComparator:
         fig.tight_layout()
 
         plt.show()
+
+    def plot_histories(self):
+        """Plots a graph of the train and val accuracy and loss of the models"""
+
+        # one graph for all losses, one for all accuracies
+        
+
+        return
 
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
