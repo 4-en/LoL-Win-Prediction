@@ -172,7 +172,7 @@ def convert_data(games=None, save_dir="/", filter_matches=CLEAN_MATCHES):
     # save data
     #print("Saving data...")
     game_data = np.array(game_data)
-    np.save(save_file, game_data)
+    #np.save(save_file, game_data)
     #print("Done!")
 
     # save csv
