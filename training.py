@@ -171,12 +171,23 @@ from models.prob_sample_model import SamplingModel
 import stats
 
 #model = DeepConv(emb_dim=32, conv_layers=3)
-model = DeepEmbedding()
+model = BasicEmbedding()
 model.compile(optimizer=tf.keras.optimizers.Adam(),
               loss=tf.keras.losses.BinaryCrossentropy(),
               metrics=['accuracy'])
 
-hist = model.fit(aug, epochs=20, validation_data=(val_aug_x, val_aug_y), batch_size=16, callbacks=[scheduler])
+hist = model.fit(aug, epochs=1, validation_data=(val_aug_x, val_aug_y), batch_size=16, callbacks=[scheduler])
+
+from lol_prediction import LoLPredictor
+
+pred = LoLPredictor(model)
+
+chance = pred.win_chance(["Ahri", "Elise", "Singed"], ["DrMundo", "Kassadin"])
+print(chance)
+
+pred.best_pick(["Ahri", "Elise", "Singed"], ["DrMundo", "Kassadin"])
+
+pred.best_pick(["Ahri", "Elise", "Singed"], ["DrMundo", "Draven"], available=["Taliyah", "Yone", "Orianna"])
 
 # fit without augmentation
 #hist = model.fit(aug, epochs=3, validation_data=(val_x, val_y), batch_size=32, callbacks=[scheduler])

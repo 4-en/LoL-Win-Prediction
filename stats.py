@@ -143,7 +143,22 @@ class ModelComparator:
         """Plots a graph of the train and val accuracy and loss of the models"""
 
         # one graph for all losses, one for all accuracies
-        
+        def plot_by_key(key):
+            names = []
+            for model_stats in self.models:
+                hist = model_stats.history
+                val = hist.history[key]
+                plt.plot(val)
+                names.append(model_stats.name)
+
+            plt.title('Model '+key)
+            plt.ylabel(key)
+            plt.xlabel('Epoch')
+            plt.legend(names, loc='upper left')
+            plt.show()
+
+        for key in ["accuracy", "val_accuracy", "loss", "val_loss"]:
+            plot_by_key(key)
 
         return
 
@@ -174,7 +189,7 @@ def visualize_embeddings(embedding_layer, size, k_clusters=10):
     plt.figure(figsize=(10,10))
     for i in range(size):
         color = colors[clusters[i]]
-        plt.scatter(embeddings[i,0], embeddings[i,1], c=color)
+        plt.scatter(embeddings[i,0], embeddings[i,1], color=color)
         name = "Unknown"
         try:
             name = conv.get_champion_name_from_index(i)

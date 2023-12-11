@@ -48,6 +48,10 @@ class ChampionConverter:
     def is_list(self, i):
         # TODO: add better check later, just check for list now
         return type(i) == list
+    
+    def get_all_indices(self):
+        l = [i for i in range(self.champion_count)]
+        return l
 
 
     def get_champion_name_from_index(self, champion_index):
@@ -72,6 +76,8 @@ class ChampionConverter:
     
         if not try_closest:
             raise Exception("Failed to find champion by name")
+        
+        
         closest = self.get_closest_champion_name(champion_name)
         if closest == None:
             raise Exception("Failed to find champion by name")
