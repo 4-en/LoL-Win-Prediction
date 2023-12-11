@@ -66,6 +66,7 @@ def convert_game(game, filter_matches=CLEAN_MATCHES)->list[int]:
     levels = []
     for player in game:
         if filter_matches and filter_player(player):
+            return None
             raise Exception("Player is below threshold!")
         champion_name = player["championName"]
         level = int(player["champLevel"])
@@ -77,6 +78,7 @@ def convert_game(game, filter_matches=CLEAN_MATCHES)->list[int]:
             except:
                 champion_name = converter.get_closest_champion_name(champion_name)
                 if champion_name is None:
+                    return None
                     raise Exception("Champion name not found!")
         if player["teamId"] == "100":
             blue_team.append(champion_id)
@@ -84,6 +86,7 @@ def convert_game(game, filter_matches=CLEAN_MATCHES)->list[int]:
                 blue_win = player["win"] == "True"
             else:
                 if blue_win != (player["win"] == "True"):
+                    return None
                     raise Exception("Blue win is not consistent!")
         else:
             red_team.append(champion_id)
@@ -91,18 +94,22 @@ def convert_game(game, filter_matches=CLEAN_MATCHES)->list[int]:
                 blue_win = player["win"] == "False"
             else:
                 if blue_win == (player["win"] == "True"):
+                    return None
                     raise Exception("Blue win is not consistent!")
                 
     if filter_matches:
         avg_level = sum(levels)/len(levels)
         if avg_level < MIN_AVG_LEVEL:
+            return None
             raise Exception("Average level is below 10!")
         lowest_level = min(levels)
 
         # try to remove games with afk players
         if lowest_level < MIN_LEVEL:
+            return None
             raise Exception("Lowest level is below 7!")
         if lowest_level < avg_level-MIN_LEVEL_DIFF:
+            return None
             raise Exception("Lowest level is more than 3 below average level!")
     
     both_teams = blue_team+red_team
@@ -151,11 +158,11 @@ def convert_data(games=None, save_dir="/", filter_matches=CLEAN_MATCHES):
     print("Converting games...")
     e_count = 0
     for game in tqdm.tqdm(games):
-        try:
-            game_list = convert_game(game, filter_matches=filter_matches)
+        game_list = convert_game(game, filter_matches=filter_matches)
+        if game_list != None:
             game_data.append(game_list)
-        except:
-            e_count += 1
+        else:
+            e_count +=1
 
     print(f"Removed {e_count} games from dataset")
 
@@ -212,8 +219,34 @@ def get_data():
     print("Done!")
 
     
+def notebook_data():
+    games_dict = load_raw_csv()
+    games = list(games_dict.values())
+
+    # split into train, val, test
+    train, val, test = split_iterable(games, weights=(90, 5, 5))
+    print("train: ", len(train))
+    print("val: ", len(val))
+    print("test: ", len(test))
+    print()
+
+    # convert each match into a list of 10 champions and a 1/0 for win/loss of blue team
+    # two copies of train data, one with some matches filtered out
+    train, train_filtered = convert_data(train, filter_matches=False), convert_data(train, filter_matches=True)
+    val = convert_data(val, filter_matches=False)
+    test = convert_data(test, filter_matches=False)
+
+    # save data
+    np.save("train.npy", train)
+    np.save("train_filtered.npy", train_filtered)
+    np.save("val.npy", val)
+    np.save("test.npy", test)
+
+
 
 
 if __name__ == "__main__":
+    notebook_data()
+    exit()
     if get_data():
         convert_data()
