@@ -125,7 +125,6 @@ class LoLPredictor:
         available = available[indicies]
         results = results[indicies]
 
-        combined = np.column_stack((available, results))
 
         if print_details:
             blue = [ self.converter.get_champion_name_from_index(i) for i in champs[:5]]
@@ -143,7 +142,10 @@ class LoLPredictor:
                 champ_name = self.converter.get_champion_name_from_index(int(champ))
                 print(f"{champ_name}: {wr_rounded}%")
 
-        return combined
+
+
+        ret = [ (self.converter.get_champion_name_from_index(i[0]), i[1]) for i in zip(available, results) ]
+        return ret
 
         
 

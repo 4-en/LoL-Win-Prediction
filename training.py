@@ -81,9 +81,12 @@ class TrivialModel(tf.keras.Model):
         self.prediction = avg_win_chance
 
     def call(self, inputs):
+        batch_size = 1
         if len(inputs.shape) > 1:
-            return np.array([self.prediction]*inputs.shape[0])
-        return np.array([self.prediction])
+            if inputs.shape[0] != None:
+                batch_size = inputs.shape[0]
+        t = tf.constant(self.prediction, shape=(batch_size, 1))
+        return t
 
 
 # baseline model, just some dense layers
@@ -139,7 +142,7 @@ from augmentation import MatchAugmentation
 # - shuffle champions, since order in champion select doesn't match specific role
 # - replace champions with random ones, more often then not, this will not change the outcome significantly, a lot of combinations possible
 # - mask out champions, so that the model can learn to predict the outcome of a match with a missing champion, eg during champion select
-aug = MatchAugmentation(train_x, train_y, aug_chance=0.90, batch_size=16, max_replace=0)
+aug = MatchAugmentation(train_x, train_y, aug_chance=0.90, batch_size=64, max_replace=0)
 
 # only shuffle and mask, no replacement
 # same augmentations every epoch for validation data
@@ -170,13 +173,38 @@ from models.deep_embedding import DeepEmbedding
 from models.prob_sample_model import SamplingModel
 import stats
 
+model0 = TrivialModel()
+model0.compile(optimizer=tf.keras.optimizers.Adam(),
+                loss=tf.keras.losses.BinaryCrossentropy(),
+                metrics=['accuracy'])
+
+hist0 = model0.fit(train_x, train_y, epochs=3, validation_data=(val_x, val_y), batch_size=64, callbacks=[scheduler])
+
+
 #model = DeepConv(emb_dim=32, conv_layers=3)
 model = BasicEmbedding()
 model.compile(optimizer=tf.keras.optimizers.Adam(),
               loss=tf.keras.losses.BinaryCrossentropy(),
               metrics=['accuracy'])
 
-hist = model.fit(aug, epochs=1, validation_data=(val_aug_x, val_aug_y), batch_size=16, callbacks=[scheduler])
+hist = model.fit(aug, epochs=3, validation_data=(val_aug_x, val_aug_y), batch_size=64, callbacks=[scheduler])
+
+model2 = DeepEmbedding(n_layers=2)
+model2.compile(optimizer=tf.keras.optimizers.Adam(),
+                loss=tf.keras.losses.BinaryCrossentropy(),
+                metrics=['accuracy'])
+
+hist2 = model2.fit(aug, epochs=3, validation_data=(val_aug_x, val_aug_y), batch_size=64, callbacks=[scheduler])
+
+comp = stats.ModelComparator((test_x, test_y))
+comp.add_model(model0, hist0, "TrivialModel")
+comp.add_model(model, hist, "BasicEmbedding")
+comp.add_model(model2, hist2, "DeepEmbedding")
+
+comp.plot_histories()
+comp.plot_bar()
+comp.print_summary()
+comp.print_table()
 
 from lol_prediction import LoLPredictor
 
@@ -187,7 +215,9 @@ print(chance)
 
 pred.best_pick(["Ahri", "Elise", "Singed"], ["DrMundo", "Kassadin"])
 
-pred.best_pick(["Ahri", "Elise", "Singed"], ["DrMundo", "Draven"], available=["Taliyah", "Yone", "Orianna"])
+ret = pred.best_pick(["Ahri", "Elise", "Singed"], ["DrMundo", "Draven"], available=["Taliyah", "Yone", "Orianna"])
+
+print(ret)
 
 # fit without augmentation
 #hist = model.fit(aug, epochs=3, validation_data=(val_x, val_y), batch_size=32, callbacks=[scheduler])

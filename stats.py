@@ -74,6 +74,7 @@ class ModelStats:
         self.name = name
         self.test_acc = test_acc_loss[0]
         self.test_loss = test_acc_loss[1]
+        self.measurements = []
 
 class ModelComparator:
     def __init__(self, test_data):
@@ -81,7 +82,12 @@ class ModelComparator:
         self.test_x = test_data[0]
         self.test_y = test_data[1]
 
-    def add_model(self, model, history, test_x, test_y, name="Unnamed model"):
+        self.measurements = []
+
+    def add_measurement(self, name, func):
+        self.measurements.append((name, func))
+
+    def add_model(self, model, history, name="Unnamed model"):
         """Adds a model to the comparator
         Args:
             model: the model to add
@@ -90,7 +96,7 @@ class ModelComparator:
             test_y: the test labels
             name: the name of the model
         """
-        test_acc_loss = model.evaluate(test_x, test_y)
+        test_acc_loss = model.evaluate(self.test_x, self.test_y)
         print("Test accuracy: ", test_acc_loss[0])
         print("Test loss: ", test_acc_loss[1])
 
@@ -100,7 +106,14 @@ class ModelComparator:
                 self.models.pop(i)
                 break
 
-        self.models.append(ModelStats(history, test_acc_loss, name))
+        m_stats = ModelStats(history, test_acc_loss, name)
+
+        # calc other measurements
+        for m_name, m_func in self.measurements:
+            y = m_func(model)
+            m_stats.measurements.append((m_name, y))
+
+        self.models.append(m_stats)
 
     def sort_by_test_acc(self):
         """Sorts the models by test accuracy"""
@@ -109,6 +122,33 @@ class ModelComparator:
     def sort_by_test_loss(self):
         """Sorts the models by test loss"""
         self.models.sort(key=lambda x: x.test_loss)
+
+    def print_table(self, print_results=True):
+        """
+        Prints table of model stats as markdown
+        """
+
+        self.sort_by_test_acc()
+
+        txt = "| Model | Test acc | Test loss |"
+        for m_name, _ in self.measurements:
+            txt += f" {m_name} |"
+        txt += "\n"
+        txt += "| --- | ---: | ---: |"
+        for _ in self.measurements:
+            txt += " ---: |"
+        txt += "\n"
+
+        for model in self.models:
+            txt += f"| {model.name} | {model.test_acc:.4f} | {model.test_loss:.4f} |"
+            for _, m in model.measurements:
+                txt += f" {m:.4f} |"
+            txt += "\n"
+
+        if print_results:
+            print(txt)
+        return txt
+
 
     def print_summary(self):
         """Prints a summary of the models"""
@@ -127,10 +167,11 @@ class ModelComparator:
         x = np.arange(len(names))
         width = 0.35
         fig, ax = plt.subplots()
-        rects1 = ax.bar(x - width/2, test_accs, width, label='Test acc')
-        rects2 = ax.bar(x + width/2, test_losses, width, label='Test loss')
-        ax.set_ylabel('Accuracy/Loss')
-        ax.set_title('Test accuracy and loss')
+        # plot accuracy
+        rects1 = ax.bar(x - width/2, test_accs, width, label='Accuracy')
+
+        ax.set_ylabel('Accuracy')
+        ax.set_title('Test accuracy')
         ax.set_xticks(x)
         ax.set_xticklabels(names)
         ax.legend()
@@ -138,6 +179,22 @@ class ModelComparator:
         fig.tight_layout()
 
         plt.show()
+
+        # plot loss
+        fig, ax = plt.subplots()
+        # plot loss
+        rects1 = ax.bar(x - width/2, test_losses, width, label='Loss')
+
+        ax.set_ylabel('Loss')
+        ax.set_title('Test loss')
+        ax.set_xticks(x)
+        ax.set_xticklabels(names)
+        ax.legend()
+
+        fig.tight_layout()
+
+        plt.show()
+
 
     def plot_histories(self):
         """Plots a graph of the train and val accuracy and loss of the models"""
@@ -177,7 +234,7 @@ def visualize_embeddings(embedding_layer, size, k_clusters=10):
 
     # K means clustering
     k = k_clusters
-    kmeans = KMeans(n_clusters=k)
+    kmeans = KMeans(n_clusters=k, n_init="auto")
     clusters = kmeans.fit_predict(embeddings)
     colors = np.random.rand(k, 3)
     # embeddings.shape = (vocab_size, embedding_dim)
