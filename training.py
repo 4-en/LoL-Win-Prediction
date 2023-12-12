@@ -34,6 +34,7 @@ for i in range(x.shape[0]):
         x_idx[i,j] = conv.champion_ids_to_indices[x[i,j]]
 
 x = x_idx
+print(conv.champion_ids)
 
 # convert to one hot
 print("Converting to one hot...")

@@ -44,6 +44,8 @@ class ChampionConverter:
             self.champion_indices_to_ids[i] = champion_id
 
         self.champion_count = len(self.champion_names)
+        
+
 
 
     def get_champion_name_from_index(self, champion_index):
@@ -85,3 +87,5 @@ if __name__ == "__main__":
         # index
         print("Index:", conv.get_champion_index_from_name(champ))
         print()
+
+       

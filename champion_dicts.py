@@ -106,6 +106,9 @@ class ChampionConverter:
             return None
         return matches[0]
     
+    def print_all(self):
+        for name, champ_id in zip(self.champion_names, self.champion_ids):
+            print(f"Champion Name: {name}, Champion ID: {champ_id}")
 
 if __name__ == "__main__":
     conv = ChampionConverter()
@@ -121,3 +124,4 @@ if __name__ == "__main__":
         # index
         print("Index:", conv.get_champion_index_from_name(champ))
         print()
+        conv.print_all()
