@@ -2,6 +2,7 @@ import tensorflow as tf
 
 
 
+# a model with multiple layers that consist of conv1d, max pool, dense layers and residual connections
 class DeepConv(tf.keras.Model):
     def __init__(self, champ_num=170, emb_dim=32, n_layers=3):
         super().__init__()
@@ -22,9 +23,11 @@ class DeepConv(tf.keras.Model):
             layer.append(tf.keras.layers.Dense(emb_dim*player_num*player_num, activation=None, name="expand"+lname))
             tf.keras.layers.Reshape((-1, player_num*emb_dim, player_num))
             layer.append(tf.keras.layers.Conv1D(emb_dim, 5, strides=5, padding="same", activation='gelu', name="conv1d"+lname))
-            self.clayers.append(tf.keras.layers.MaxPool1D(2, name="maxpool"+lname))
+            layer.append(tf.keras.layers.MaxPool1D(2, name="maxpool"+lname))
             
             layer.append(tf.keras.layers.Dense(emb_dim, activation='gelu', name="dense"+lname))
+
+            self.deep_layers.append(layer)
             
 
         #self.maxpool = tf.keras.layers.MaxPool1D(10)
