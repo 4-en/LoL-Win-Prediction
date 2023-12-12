@@ -138,7 +138,6 @@ class LoLPredictor:
                 wr = results[i]
                 wr_rounded = round(float(wr) * 100, 2)
                 champ = available[i]
-                print(champ)
                 champ_name = self.converter.get_champion_name_from_index(int(champ))
                 print(f"{champ_name}: {wr_rounded}%")
 
