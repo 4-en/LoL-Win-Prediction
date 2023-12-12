@@ -72,8 +72,8 @@ class ModelStats:
 
         self.history = history
         self.name = name
-        self.test_acc = test_acc_loss[0]
-        self.test_loss = test_acc_loss[1]
+        self.test_acc = test_acc_loss[1]
+        self.test_loss = test_acc_loss[0]
         self.measurements = []
 
 class ModelComparator:
@@ -98,8 +98,8 @@ class ModelComparator:
         """
         print("Evaluating ", name)
         test_acc_loss = model.evaluate(self.test_x, self.test_y)
-        print("Test accuracy: ", test_acc_loss[0])
-        print("Test loss: ", test_acc_loss[1])
+        print("Test accuracy: ", test_acc_loss[1])
+        print("Test loss: ", test_acc_loss[0])
 
         # remove model with the same name
         for i in range(len(self.models)):
