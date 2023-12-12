@@ -69,9 +69,6 @@ train_x_1h, train_y, val_x_1h, val_y, test_x_1h, test_y = split_data(x_hot, y)
 
 train_x, _, val_x, _, test_x, _ = split_data(x, y)
 
-
-
-
 avg_win_chance = np.average(train_y)
 
 
@@ -196,20 +193,20 @@ model2.compile(optimizer=tf.keras.optimizers.Adam(),
                 loss=tf.keras.losses.BinaryCrossentropy(),
                 metrics=['accuracy'])
 
-hist2 = model2.fit(aug, epochs=3, validation_data=(val_aug_x, val_aug_y), batch_size=64, callbacks=[scheduler])
+hist2 = model2.fit(aug, epochs=1, validation_data=(val_aug_x, val_aug_y), batch_size=64, callbacks=[scheduler])
 
 MODEL = model1
 HIST = hist1
 
 
 # Create an ensemble model
-#model3 = EnsembleModel(models=[model0, model1, model2])
-#model3.compile(optimizer=tf.keras.optimizers.Adam(),
-                       #loss=tf.keras.losses.BinaryCrossentropy(),
-                      # metrics=['accuracy'])
+model3 = EnsembleModel(models=[model1, model2])
+model3.compile(optimizer=tf.keras.optimizers.Adam(),
+                    loss=tf.keras.losses.BinaryCrossentropy(),
+                    metrics=['accuracy'])
 
 
-#hist3 = model3.fit(train_x, train_y, epochs=3, validation_data=(val_x, val_y), batch_size=64, callbacks=[scheduler])
+hist3 = model3.fit(train_x, train_y, epochs=3, validation_data=(val_x, val_y), batch_size=64, callbacks=[scheduler])
 
 
 
@@ -218,7 +215,7 @@ comp = stats.ModelComparator((test_x, test_y))
 comp.add_model(model0, hist0, "TrivialModel")
 comp.add_model(model1, hist1, "BasicEmbedding")
 comp.add_model(model2, hist2, "DeepEmbedding")
-#comp.add_model(model3, hist3, "EnsembleModel")
+comp.add_model(model3, hist3, "EnsembleModel")
 
 
 from lol_prediction import LoLPredictor
@@ -309,9 +306,10 @@ def option1():
     global HIST
     print("Choose the model used for the predictions")
     print("1. Trivial Model")
-    print("2. BasicEmbedding")
-    print("3. DeepEmbedding")
-    model_choice = input("Enter your choice (1-3): ")
+    print("2. Basic Embedding")
+    print("3. Deep Embedding")
+    print("4. Ensemble Model")
+    model_choice = input("Enter your choice (1-4): ")
     print("")
 
     if model_choice == "1":
@@ -326,12 +324,12 @@ def option1():
         MODEL = model2
         HIST = hist2
         print("Model set to Deep Embedding")
-    #elif model_choice == "4":
-     #   MODEL = model3
-      #  HIST = hist3
-       # print("Model set to Ensemble Model")
+    elif model_choice == "4":
+        MODEL = model3
+        HIST = hist3
+        print("Model set to Ensemble Model")
     else:
-        print("Invalid choice. Please enter a number between 1 and 3.")
+        print("Invalid choice. Please enter a number between 1 and 4.")
         print("")
 
 def option2():
