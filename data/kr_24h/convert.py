@@ -38,8 +38,8 @@ def filter_player(player) -> bool:
         return True
     
     timePlayed = player["timePlayed"]
-    timePlayed = int(timePlayed) / 60
-    if timePlayed < 22:
+    timePlayed = int(timePlayed) / 60.0
+    if timePlayed < 20:
         return True
 
     return False
@@ -222,6 +222,8 @@ def get_data():
 def notebook_data():
     games_dict = load_raw_csv()
     games = list(games_dict.values())
+
+    np.random.shuffle(games)
 
     # split into train, val, test
     train, val, test = split_iterable(games, weights=(90, 5, 5))
