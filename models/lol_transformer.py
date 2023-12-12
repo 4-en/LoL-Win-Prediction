@@ -7,13 +7,12 @@ import tensorflow as tf
 
 
 
+# a single transformer block that can have multiple heads
 class LoLTransformerBlock(tf.keras.layers.Layer):
     def __init__(self, num_heads, embedding_dim):
         super(LoLTransformerBlock, self).__init__()
         self.num_heads = num_heads
         self.embedding_dim = embedding_dim
-
-        self.attention = tf.keras.layers.MultiHeadAttention()
 
         self.flatten = tf.keras.layers.Flatten()
 
@@ -27,7 +26,7 @@ class LoLTransformerBlock(tf.keras.layers.Layer):
 
         self.layernorm1 = tf.keras.layers.LayerNormalization()
 
-        self.combineHeads = tf.keras.layers.Dense(self.embedding_dim*10, input_shape=(self.embedding_dim*num_heads*10,), activation=None)
+        self.combineHeads = tf.keras.layers.Dense(self.embedding_dim, activation=None)
 
         self.nonLin = tf.keras.layers.Dense(self.embedding_dim, input_shape=(self.embedding_dim,), activation='gelu')
 
@@ -69,12 +68,11 @@ class LoLTransformerBlock(tf.keras.layers.Layer):
     def combine_heads(self, x):
         # x.shape = (batch_size, num_heads, 10, embedding_dim)
         # flatten before combination layer
-        x = self.flatten(x)
-        # x.shape = (batch_size, num_heads*10*embedding_dim)
+        x = tf.transpose(x, perm=[0,2,1,3])
+        # x.shape = (batch_size, 10, num_heads, embedding_dim)
+        x = tf.reshape(x, ((-1, 10, self.num_heads*self.embedding_dim)))
         x = self.combineHeads(x)
-        # x.shape = (batch_size, 10*embedding_dim)
-        x = tf.reshape(x, (-1, 10, self.embedding_dim))
-        # x.shape = (batch_size, 10, embedding_dim)
+        # x.shape = (batch_size, 10,embedding_dim)
         return x
 
     def call(self, x, mask=None):
@@ -104,7 +102,7 @@ class LoLTransformerBlock(tf.keras.layers.Layer):
 
         return x
 
-
+# base model consisting of the embeddings, multiple transformer blocks and some dense layers at the end
 class LoLTransformer(tf.keras.Model):
     def __init__(self, num_layers=4, num_heads=4, embedding_dim=32, champ_vocab_size=170):
         super(LoLTransformer, self).__init__()

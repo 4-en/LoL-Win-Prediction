@@ -72,8 +72,8 @@ class ModelStats:
 
         self.history = history
         self.name = name
-        self.test_acc = test_acc_loss[0]
-        self.test_loss = test_acc_loss[1]
+        self.test_acc = test_acc_loss[1]
+        self.test_loss = test_acc_loss[0]
         self.measurements = []
 
 class ModelComparator:
@@ -96,9 +96,10 @@ class ModelComparator:
             test_y: the test labels
             name: the name of the model
         """
+        print("Evaluating ", name)
         test_acc_loss = model.evaluate(self.test_x, self.test_y)
-        print("Test accuracy: ", test_acc_loss[0])
-        print("Test loss: ", test_acc_loss[1])
+        print("Test accuracy: ", test_acc_loss[1])
+        print("Test loss: ", test_acc_loss[0])
 
         # remove model with the same name
         for i in range(len(self.models)):
@@ -196,7 +197,7 @@ class ModelComparator:
         plt.show()
 
 
-    def plot_histories(self):
+    def plot_histories(self, val_only=True):
         """Plots a graph of the train and val accuracy and loss of the models"""
 
         # one graph for all losses, one for all accuracies
@@ -215,6 +216,8 @@ class ModelComparator:
             plt.show()
 
         for key in ["accuracy", "val_accuracy", "loss", "val_loss"]:
+            if val_only and "val" not in key:
+                continue
             plot_by_key(key)
 
         return
