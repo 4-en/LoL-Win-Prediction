@@ -1,30 +1,8 @@
----
-jupyter:
-  kernelspec:
-    display_name: tf
-    language: python
-    name: python3
-  language_info:
-    codemirror_mode:
-      name: ipython
-      version: 3
-    file_extension: .py
-    mimetype: text/x-python
-    name: python
-    nbconvert_exporter: python
-    pygments_lexer: ipython3
-    version: 3.9.18
-  nbformat: 4
-  nbformat_minor: 2
----
 
-::: {.cell .markdown}
 # League of Legends Win Chance Prediction
 
 ### ML model to predict the outcome of a League of Legends match based on champion selection
-:::
 
-::: {.cell .markdown}
 ## Introduction
 
 League of Legends, often abbreviated as LoL, is a popular online
@@ -50,9 +28,7 @@ prediction of their chances of winning are looking less than good.
 The information about the match is limited to just the champions picked
 before the game actually begins, so we are going to be using only this
 information for training our model.
-:::
 
-::: {.cell .markdown}
 ## Expected Results
 
 -   since the are many variables we cant account for, we don\'t expect
@@ -62,9 +38,7 @@ information for training our model.
     after champ select
 -   use the trained model to find optimal champion during champ select
     (best win chance)
-:::
 
-::: {.cell .markdown}
 ## Similar Works
 
 ### LoL-Match-Prediction
@@ -96,9 +70,7 @@ this, it is impressive that they achieved an accuracy of \~97%.
 Overall, there are a few examples of projects similar to ours, but they
 differ in a few aspects. Due to this, we will try our own ideas for
 different architectures and measure the performance to compare them.
-:::
 
-::: {.cell .markdown}
 ## Dataset
 
 There are several datasets available online that contain information
@@ -156,9 +128,7 @@ The keys we are using to filter games are the following:
 -   champLevel
     -   We are filtering games were one or more champions are far below
         the average, indicating that they were not participating.
-:::
 
-::: {.cell .code execution_count="1"}
 ``` python
 # if false, preprocessed data will be loaded from disk
 # same results, but faster
@@ -190,9 +160,7 @@ if CONVERT_DATA:
     val = convert.convert_data(val, filter_matches=False)
     test = convert.convert_data(test, filter_matches=False)
 ```
-:::
 
-::: {.cell .code execution_count="2"}
 ``` python
 # for some reason, this takes like 20min to run in the notebook, but only 1min directly in python
 
@@ -216,15 +184,7 @@ if not CONVERT_DATA:
     print("test: ", len(test))
 ```
 
-::: {.output .stream .stdout}
-    train:  233040
-    train_filtered:  204704
-    val:  12947
-    test:  12947
-:::
-:::
 
-::: {.cell .markdown}
 ## Data Analysis
 
 Before we can start training our model, we need to do some data analysis
@@ -246,15 +206,11 @@ This overall win rate gives us a baseline for our model. If our model is
 not able to beat this baseline, then it is not very useful. The overall
 win rate is calculated by dividing the number of wins by the total
 number of matches.
-:::
 
-::: {.cell .code execution_count="3"}
 ``` python
 # calculate overall win rate here
 ```
-:::
 
-::: {.cell .markdown}
 ### Champion Win Rate
 
 Next, we want to look at the win rate of each champion. This gives us an
@@ -265,9 +221,7 @@ and see if it is able to predict the outcome of the game better than
 just picking the most popular champions. If we match champions with high
 win rates against champions with low win rates, we can also see if our
 models are able to predict the outcome of the game correctly.
-:::
 
-::: {.cell .code execution_count="4"}
 ``` python
 # split into x and y
 train_x, train_y = train[:, :-1], train[:, -1]
@@ -321,21 +275,16 @@ test_x_1hot = one_hot_encode(test_x)
 
 
 ```
-:::
 
-::: {.cell .code execution_count="5"}
 ``` python
 # calculate average win chance, we should at least beat this :)
 avg_win_chance = np.average(train_y)
 print("average blue side win chance: ", avg_win_chance)
 ```
 
-::: {.output .stream .stdout}
-    average blue side win chance:  0.5176064194987985
-:::
-:::
 
-::: {.cell .code execution_count="6"}
+    average blue side win chance:  0.5176064194987985
+
 ``` python
 import tensorflow as tf
 
@@ -379,9 +328,7 @@ class BaselineModel(tf.keras.Model):
         x = self.dense4(x)
         return self.dense5(x)
 ```
-:::
 
-::: {.cell .code execution_count="7"}
 ``` python
 # trivial model for comparison
 trivial_model = TrivialModel()
@@ -406,7 +353,7 @@ stats.plot_history(trivial_hist)
 stats.plot_history(base_hist)
 ```
 
-::: {.output .stream .stdout}
+
     Epoch 1/10
     911/911 [==============================] - 2s 2ms/step - loss: 0.6925 - accuracy: 0.5176 - val_loss: 0.6933 - val_accuracy: 0.5072
     Epoch 2/10
@@ -439,26 +386,15 @@ stats.plot_history(base_hist)
     7283/7283 [==============================] - 22s 3ms/step - loss: 0.6768 - accuracy: 0.5698 - val_loss: 0.6962 - val_accuracy: 0.5234
     Epoch 6/6
     7283/7283 [==============================] - 21s 3ms/step - loss: 0.6652 - accuracy: 0.5886 - val_loss: 0.7105 - val_accuracy: 0.5187
-:::
 
-::: {.output .display_data}
 ![](vertopal_9b673558d3ed45ecaffbe0033b33f888/b6fd1fec12d73f16dbee732102ee615add562b65.png)
-:::
 
-::: {.output .display_data}
 ![](vertopal_9b673558d3ed45ecaffbe0033b33f888/c25666e72385b83ccf5cb6711d1943662c2ba018.png)
-:::
 
-::: {.output .display_data}
 ![](vertopal_9b673558d3ed45ecaffbe0033b33f888/46b89c2d260461cee7717ad515815bcee6448291.png)
-:::
 
-::: {.output .display_data}
 ![](vertopal_9b673558d3ed45ecaffbe0033b33f888/2a6369f926a81eaaa5c13dad1dbc14bd16d6c42f.png)
-:::
-:::
 
-::: {.cell .markdown}
 As we can see, the baseline model does manage to get a higher accuracy
 than the average win rate. The validation accuracy starts going down
 really quickly, while the training accuracy keeps going up. This
@@ -466,18 +402,14 @@ indicates that the model is overfitting to the training data. This is
 not surprising, since the model is very simple and the training data is
 very large. We will have to use a more complex model and try to use some
 regularization to prevent overfitting.
-:::
 
-::: {.cell .markdown}
 ## Cleaned Data
 
 Now we are going to check if using the cleaned data improves the
 performance of the model. To do that, we are simply going to train the
 model with the cleaned data and use the same val data as before. We will
 then compare the results to see if there is any improvement.
-:::
 
-::: {.cell .code execution_count="8"}
 ``` python
 # same model, but with some matches filtered out
 base_model_filtered = BaselineModel()
@@ -491,7 +423,7 @@ bmf_hist = base_model_filtered.fit(train_filtered_x_1hot, train_filtered_y, epoc
 stats.plot_history(bmf_hist)
 ```
 
-::: {.output .stream .stdout}
+
     Epoch 1/6
     6397/6397 [==============================] - 15s 2ms/step - loss: 0.6906 - accuracy: 0.5298 - val_loss: 0.6906 - val_accuracy: 0.5283
     Epoch 2/6
@@ -504,18 +436,13 @@ stats.plot_history(bmf_hist)
     6397/6397 [==============================] - 14s 2ms/step - loss: 0.6763 - accuracy: 0.5719 - val_loss: 0.6967 - val_accuracy: 0.5210
     Epoch 6/6
     6397/6397 [==============================] - 14s 2ms/step - loss: 0.6630 - accuracy: 0.5946 - val_loss: 0.7158 - val_accuracy: 0.5062
-:::
 
-::: {.output .display_data}
 ![](vertopal_9b673558d3ed45ecaffbe0033b33f888/ad43c47b8cb3ace6fbf531132c725f81cbaffd1b.png)
-:::
 
-::: {.output .display_data}
+
+
 ![](vertopal_9b673558d3ed45ecaffbe0033b33f888/8c10c449e911551bfd079f3a3a2d579b71587518.png)
-:::
-:::
 
-::: {.cell .markdown}
 We can see that our validation accuracy is slightly higher at almost
 0.54 and that the overfitting is a bit weaker, although it is still
 quite a lot. We can also observe, that the training accuracy is
@@ -523,9 +450,7 @@ increasing faster than before. This is probably due to the fact that the
 filtered data contains less noise, so fewer games that are not as
 dependent on the champions as the average, which means that it is easier
 to learn the impact of each champion.
-:::
 
-::: {.cell .markdown}
 ## Embeddings
 
 Instead of using one-hot encoded vectors, we want to use an embedding
@@ -535,9 +460,7 @@ training speed.
 
 After the embedding layer, this model should be the same as the Baseline
 model, so we expect similar performance.
-:::
 
-::: {.cell .code execution_count="9"}
 ``` python
 # a basic model that uses embeddings at the first layer instead of one hot vectors
 class BasicEmbedding(tf.keras.Model):
@@ -561,9 +484,7 @@ class BasicEmbedding(tf.keras.Model):
         x = self.dense4(x)
         return self.dense5(x)
 ```
-:::
 
-::: {.cell .code execution_count="10"}
 ``` python
 basic_embedding = BasicEmbedding()
 basic_embedding.compile(optimizer='adam',
