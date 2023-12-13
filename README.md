@@ -73,15 +73,10 @@ Output:
 ['Velkoz', 'Jhin', 'Taliyah', 'null', 'null']
 vs
 ['Xayah', 'Graves', 'Malzahar', 'Leblanc', 'null']
-86
 Shyvana: 57.66%
-19
 Warwick: 57.53%
-161
 Renata: 57.5%
-95
 Sejuani: 57.24%
-32
 Amumu: 57.19%
 ```
 
@@ -95,14 +90,14 @@ Output:
 1/1 [==============================] - 0s 29ms/step
 5 best picks for
 ['Velkoz', 'Jhin', 'Taliyah', 'null', 'null']
-vs
 ['Xayah', 'Graves', 'Malzahar', 'Leblanc', 'null']
-70
 Gragas: 54.78%
-101
 Khazix: 54.73%
-145
 Ivern: 53.37%
-60
 LeeSin: 50.88%
 ```
+
+## Getting started
+### Pretrained
+
+### Training
