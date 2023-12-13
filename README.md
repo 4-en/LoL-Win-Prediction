@@ -43,6 +43,7 @@ The requirements can be found in env.yml.
 ## Example
 ![champ select](data/notebook/img/champ_sel1.png)
 
+### Win chance
 ```python
 from lol_prediction import LoLPredictor
 
@@ -60,6 +61,7 @@ Output:
 0.5423562526702881
 ```
 
+### Best Picks
 ```python
 # predict next best champion (for blue side)
 _=predictor.best_pick(blue, red)
@@ -81,4 +83,26 @@ Renata: 57.5%
 Sejuani: 57.24%
 32
 Amumu: 57.19%
+```
+
+```python
+# best picks from list
+my_champs = ["KhaZix", "LeeSin", "Gragas", "Ivern"]
+_=predictor.best_pick(blue, red, my_champs)
+```
+Output:
+```
+1/1 [==============================] - 0s 29ms/step
+5 best picks for
+['Velkoz', 'Jhin', 'Taliyah', 'null', 'null']
+vs
+['Xayah', 'Graves', 'Malzahar', 'Leblanc', 'null']
+70
+Gragas: 54.78%
+101
+Khazix: 54.73%
+145
+Ivern: 53.37%
+60
+LeeSin: 50.88%
 ```
