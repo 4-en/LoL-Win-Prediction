@@ -33,5 +33,52 @@ information for training our model.
 For a detailed overview, please look at our [notebook file](/project.ipynb).
 
 ## Goals
-- predict win chance for League of Legends games based only on champions selected
-- 
+- train neural network to predict outcome of League of Legends games based only on champions picked
+- use trained network to estimate win chance during champion select
+- use trained network to calculate best pick for each stage of champion select
+
+## Requirements
+The requirements can be found in env.yml.
+
+## Example
+![champ select](data/notebook/img/champ_sel1.png)
+
+```python
+from lol_prediction import LoLPredictor
+
+predictor = LoLPredictor(lol_transformer_8_8)
+
+blue = ["VelKoz", "Jhin", "Taliyah"]
+red = ["Xayah", "Graves", "Malzahar", "LeBlanc"]
+
+# predict blue side win chance
+predictor.win_chance(blue, red)
+```
+Output:
+```
+1/1 [==============================] - 0s 32ms/step
+0.5423562526702881
+```
+
+```python
+# predict next best champion (for blue side)
+_=predictor.best_pick(blue, red)
+```
+Output:
+```
+5/5 [==============================] - 0s 13ms/step
+5 best picks for
+['Velkoz', 'Jhin', 'Taliyah', 'null', 'null']
+vs
+['Xayah', 'Graves', 'Malzahar', 'Leblanc', 'null']
+86
+Shyvana: 57.66%
+19
+Warwick: 57.53%
+161
+Renata: 57.5%
+95
+Sejuani: 57.24%
+32
+Amumu: 57.19%
+```
