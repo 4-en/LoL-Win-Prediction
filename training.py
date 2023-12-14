@@ -34,14 +34,6 @@ for i in range(x.shape[0]):
 
 x = x_idx
 
-# convert to one hot
-print("Converting to one hot...")
-one_hot = np.zeros((x.shape[0], x.shape[1], CHAMP_NUM))
-for i in range(x.shape[0]):
-    for j in range(x.shape[1]):
-        one_hot[i,j,int(x[i,j]-1)] = 1
-
-x_hot = one_hot
 
 def split_data(x, y, train_ratio=0.8, val_ratio=0.1, test_ratio=0.1):
     l = x.shape[0]
@@ -55,60 +47,16 @@ def split_data(x, y, train_ratio=0.8, val_ratio=0.1, test_ratio=0.1):
 
     return train_x, train_y, val_x, val_y, test_x, test_y
 
-def print_random_sample(x, y):
-    import random
-    i = random.randint(0, x.shape[0]-1)
-    print("Sample: ", i)
-    print(x[i])
-    print(y[i])
 
 
 
-train_x_1h, train_y, val_x_1h, val_y, test_x_1h, test_y = split_data(x_hot, y)
 
-train_x, _, val_x, _, test_x, _ = split_data(x, y)
-
+train_x, train_y, val_x, val_y, test_x, test_y = split_data(x, y)
 
 
 
 avg_win_chance = np.average(train_y)
 print("Average Blue side win chance: ", avg_win_chance)
-
-class TrivialModel(tf.keras.Model):
-    """A trivial model that always predicts the average win chance"""
-    def __init__(self):
-        super(TrivialModel, self).__init__()
-        self.prediction = avg_win_chance
-
-    def call(self, inputs):
-        batch_size = 1
-        if len(inputs.shape) > 1:
-            if inputs.shape[0] != None:
-                batch_size = inputs.shape[0]
-        t = tf.constant(self.prediction, shape=(batch_size, 1))
-        return t
-
-
-# baseline model, just some dense layers
-class BaselineModel(tf.keras.Model):
-    def __init__(self):
-        super(BaselineModel, self).__init__()
-        self.dense1 = tf.keras.layers.Dense(32, activation='relu', input_shape=(None,CHAMP_NUM))
-        self.dense2 = tf.keras.layers.Dense(256, activation='relu')
-        self.dense4 = tf.keras.layers.Dense(128, activation='relu')
-        self.dense5 = tf.keras.layers.Dense(1, activation='sigmoid')
-
-    def call(self, inputs):
-        x = tf.reshape(inputs, (-1, PLAYER_NUM, CHAMP_NUM))
-        # same dense for every player
-        x = self.dense1(x)
-        # shape = (-1, 10, 32  )
-        # flatten
-        x = tf.reshape(x, (-1, 32*10))
-        # 3 dense layers, last one is output of (-1, 1)
-        x = self.dense2(x)
-        x = self.dense4(x)
-        return self.dense5(x)
 
 
 def plot_hist(hist) -> None:
@@ -130,6 +78,7 @@ def plot_hist(hist) -> None:
     plt.legend(['train', 'val'])
     plt.show()
 
+
 # lr scheduler
 scheduler = tf.keras.callbacks.LearningRateScheduler(lambda epoch: 0.0001 * 0.97**epoch)
 #win_chance_model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
@@ -144,23 +93,10 @@ from augmentation import MatchAugmentation
 # - mask out champions, so that the model can learn to predict the outcome of a match with a missing champion, eg during champion select
 aug = MatchAugmentation(train_x, train_y, aug_chance=0.90, batch_size=64, max_replace=0)
 
-# only shuffle and mask, no replacement
-# same augmentations every epoch for validation data
-val_aug = MatchAugmentation(val_x, val_y, aug_chance=0.8, batch_size=1, max_replace=0)
-val_aug_x, val_aug_y = [], []
-for i in range(len(val_aug)):
-    x, y = val_aug[i]
-    x = x[0]
-    y = y[0]
-    assert x.shape == (10,) and y.shape == (1,)
-    val_aug_x.append(x)
-    val_aug_y.append(y)
-
-val_aug_x = np.array(val_aug_x)
-val_aug_y = np.array(val_aug_y)
 
 
 
+# different models
 from models.SynergyModel import SynergyModel
 from models.basic_embedding_model import BasicEmbedding
 
@@ -171,61 +107,31 @@ from models.lol_transformer import LoLTransformer
 from models.deep_embedding import DeepEmbedding
 
 from models.prob_sample_model import SamplingModel
+
+
 import stats
-
-model0 = TrivialModel()
-model0.compile(optimizer=tf.keras.optimizers.Adam(),
-                loss=tf.keras.losses.BinaryCrossentropy(),
-                metrics=['accuracy'])
-
-hist0 = model0.fit(train_x, train_y, epochs=3, validation_data=(val_x, val_y), batch_size=64, callbacks=[scheduler])
 
 
 #model = DeepConv(emb_dim=32, conv_layers=3)
-model = BasicEmbedding()
+model = LoLTransformer(8,12,32)
 model.compile(optimizer=tf.keras.optimizers.Adam(),
               loss=tf.keras.losses.BinaryCrossentropy(),
               metrics=['accuracy'])
 
-hist = model.fit(aug, epochs=3, validation_data=(val_aug_x, val_aug_y), batch_size=64, callbacks=[scheduler])
-
-model2 = DeepEmbedding(n_layers=2)
-model2.compile(optimizer=tf.keras.optimizers.Adam(),
-                loss=tf.keras.losses.BinaryCrossentropy(),
-                metrics=['accuracy'])
-
-hist2 = model2.fit(aug, epochs=3, validation_data=(val_aug_x, val_aug_y), batch_size=64, callbacks=[scheduler])
-
-comp = stats.ModelComparator((test_x, test_y))
-comp.add_model(model0, hist0, "TrivialModel")
-comp.add_model(model, hist, "BasicEmbedding")
-comp.add_model(model2, hist2, "DeepEmbedding")
-
-comp.plot_histories()
-comp.plot_bar()
-comp.print_summary()
-comp.print_table()
+hist = model.fit(aug, epochs=3, validation_data=(val_x, val_y), batch_size=64, callbacks=[scheduler])
 
 from lol_prediction import LoLPredictor
 
-pred = LoLPredictor(model)
+#pred = LoLPredictor(model)
 
-chance = pred.win_chance(["Ahri", "Elise", "Singed"], ["DrMundo", "Kassadin"])
-print(chance)
+#chance = pred.win_chance(["Ahri", "Elise", "Singed"], ["DrMundo", "Kassadin"])
+#print(chance)
 
-pred.best_pick(["Ahri", "Elise", "Singed"], ["DrMundo", "Kassadin"])
+#pred.best_pick(["Ahri", "Elise", "Singed"], ["DrMundo", "Kassadin"])
 
-ret = pred.best_pick(["Ahri", "Elise", "Singed"], ["DrMundo", "Draven"], available=["Taliyah", "Yone", "Orianna"])
+#ret = pred.best_pick(["Ahri", "Elise", "Singed"], ["DrMundo", "Draven"], available=["Taliyah", "Yone", "Orianna"])
 
-print(ret)
 
-# fit without augmentation
-#hist = model.fit(aug, epochs=3, validation_data=(val_x, val_y), batch_size=32, callbacks=[scheduler])
-#hist = model.fit(train_x_1h, train_y, epochs=5, validation_data=(val_x_1h, val_y), batch_size=32, callbacks=[scheduler])
-
-stats.print_embedding_norms(model.embedding, CHAMP_NUM)
-
-stats.visualize_embeddings(model.embedding, CHAMP_NUM)
 
 # test accuracy
 test_loss, test_acc = model.evaluate(test_x, test_y, verbose=2)
@@ -234,7 +140,7 @@ print("Test loss: ", test_loss)
 
 plot_hist(hist)
 # save model weights
-#model.save_weights("models/lol_transformer_8_8.h5")
+model.save_weights("models/lol_transformer_8_12.h5")
 
 def find_optimal_champion():
     # get random sample from test data
