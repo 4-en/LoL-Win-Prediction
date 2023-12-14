@@ -118,7 +118,12 @@ model.compile(optimizer=tf.keras.optimizers.Adam(),
               loss=tf.keras.losses.BinaryCrossentropy(),
               metrics=['accuracy'])
 
-hist = model.fit(aug, epochs=3, validation_data=(val_x, val_y), batch_size=64, callbacks=[scheduler])
+aug.batch_size = 4
+hist = model.fit(aug, epochs=2, validation_data=(val_x, val_y), batch_size=4, callbacks=[scheduler])
+aug.batch_size = 16
+hist = model.fit(aug, epochs=3, validation_data=(val_x, val_y), batch_size=16, callbacks=[scheduler])
+aug.batch_size = 64
+hist = model.fit(aug, epochs=20, validation_data=(val_x, val_y), batch_size=64, callbacks=[scheduler])
 
 from lol_prediction import LoLPredictor
 

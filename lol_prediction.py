@@ -1,5 +1,6 @@
 import numpy as np
 import champion_dicts
+import tensorflow as tf
 # this class is used with a model to perform different predictions based on game data
 
 class LoLPredictor:
@@ -146,7 +147,32 @@ class LoLPredictor:
         ret = [ (self.converter.get_champion_name_from_index(i[0]), i[1]) for i in zip(available, results) ]
         return ret
 
+def load_default_model():
+    from models.lol_transformer import LoLTransformer
+
+    print("Loading LoLTransformer_8b_12h...")
+    model = LoLTransformer(8,12)
+
+    test_in = tf.random.uniform(shape=(8,10), minval=0, maxval=169, dtype=tf.int32)
+    _ = model.predict(test_in)
+
+
+    model.load_weights("models/lol_transformer_8_12.h5")
+    print("Loaded!")
+    return model
+
         
 if __name__ == "__main__":
-    pass
+    model = load_default_model()
+
+    pred = LoLPredictor(model)
+
+    chance = pred.win_chance(["Ahri", "Elise", "Singed"], ["DrMundo", "Kassadin"])
+    print(chance)
+
+    _ = pred.best_pick(["Ahri", "Elise", "Singed"], ["DrMundo", "Kassadin"])
+
+    _ = pred.best_pick(["Ahri", "Elise", "Singed"], ["DrMundo", "Draven"], available=["Taliyah", "Yone", "Orianna"])
+
+    
         
