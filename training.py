@@ -91,7 +91,7 @@ from augmentation import MatchAugmentation
 # - shuffle champions, since order in champion select doesn't match specific role
 # - replace champions with random ones, more often then not, this will not change the outcome significantly, a lot of combinations possible
 # - mask out champions, so that the model can learn to predict the outcome of a match with a missing champion, eg during champion select
-aug = MatchAugmentation(train_x, train_y, aug_chance=0.90, batch_size=64, max_replace=0)
+aug = MatchAugmentation(train_x, train_y, aug_chance=0.98, batch_size=32, max_replace=4)
 
 
 
@@ -113,17 +113,29 @@ import stats
 
 
 #model = DeepConv(emb_dim=32, conv_layers=3)
-model = LoLTransformer(8,12,32)
+model = LoLTransformer(32,32, 8)
+
+model.build((1,10))
+
+model.summary()
+
+#model.load_weights("models/lol_transformer_32_32.h5")
+
 model.compile(optimizer=tf.keras.optimizers.Adam(),
               loss=tf.keras.losses.BinaryCrossentropy(),
               metrics=['accuracy'])
 
 aug.batch_size = 4
-hist = model.fit(aug, epochs=2, validation_data=(val_x, val_y), batch_size=4, callbacks=[scheduler])
+aug.aug_chance = 0.3
+aug.max_replace = 1
+hist = model.fit(aug, epochs=2, validation_data=(val_x, val_y), callbacks=[scheduler])
+aug.aug_chance = 0.7
 aug.batch_size = 16
-hist = model.fit(aug, epochs=3, validation_data=(val_x, val_y), batch_size=16, callbacks=[scheduler])
+aug.max_replace = 4
+hist = model.fit(aug, epochs=3, validation_data=(val_x, val_y), callbacks=[scheduler])
+aug.aug_chance = 0.98
 aug.batch_size = 64
-hist = model.fit(aug, epochs=20, validation_data=(val_x, val_y), batch_size=64, callbacks=[scheduler])
+hist = model.fit(aug, epochs=20, validation_data=(val_x, val_y), callbacks=[scheduler])
 
 from lol_prediction import LoLPredictor
 
@@ -145,7 +157,7 @@ print("Test loss: ", test_loss)
 
 plot_hist(hist)
 # save model weights
-model.save_weights("models/lol_transformer_8_12.h5")
+model.save_weights("models/lol_transformer_32_32_8.h5")
 
 def find_optimal_champion():
     # get random sample from test data
