@@ -96,5 +96,3 @@ Khazix: 54.73%
 Ivern: 53.37%
 LeeSin: 50.88%
 ```
-
-### Training
