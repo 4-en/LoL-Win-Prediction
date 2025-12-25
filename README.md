@@ -97,7 +97,4 @@ Ivern: 53.37%
 LeeSin: 50.88%
 ```
 
-## Getting started
-### Pretrained
-
 ### Training
